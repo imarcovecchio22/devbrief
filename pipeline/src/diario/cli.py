@@ -11,6 +11,7 @@ from diario import pipeline
 from diario.config import ErrorConfig, Fuente, cargar_fuentes
 from diario.diagnostico import Estado, probar_fuentes
 from diario.fuentes import crear_cliente
+from diario.llm.cliente import ClienteAnthropic, ErrorLLMFatal
 from diario.repositorio import Repositorio
 from diario.settings import Settings
 
@@ -71,6 +72,55 @@ def ingestar(
     )
     for error in resumen.errores:
         typer.secho(f"  falló {error['fuente']}: {error['error']}", fg=typer.colors.YELLOW)
+
+
+@app.command()
+def puntuar(
+    limite: int | None = typer.Option(
+        None, help="Máximo de items a puntuar (default: MAX_ITEMS_PUNTAJE)."
+    ),
+) -> None:
+    """Puntúa con el LLM los items nuevos según config/perfil.md."""
+    settings = Settings()
+    url = _requerir(settings.database_url, "DATABASE_URL")
+    api_key = _requerir(settings.anthropic_api_key, "ANTHROPIC_API_KEY")
+    perfil = settings.ruta_perfil.read_text(encoding="utf-8")
+    areas = {f.nombre: f.area for f in _cargar(settings, solo_activas=False)}
+
+    with Repositorio.conectar(url) as repo:
+        items = repo.items_para_puntuar(
+            max_intentos=settings.max_intentos_puntaje,
+            limite=limite or settings.max_items_puntaje,
+            areas=areas,
+        )
+        typer.echo(f"{len(items)} items para puntuar con {settings.modelo_puntaje}.")
+        corrida = repo.iniciar_corrida()
+        resumen = pipeline.ResumenPuntaje()
+        try:
+            resumen = pipeline.puntuar(
+                repo,
+                ClienteAnthropic(api_key),
+                items,
+                perfil=perfil,
+                modelo=settings.modelo_puntaje,
+                hilos=settings.hilos_llm,
+            )
+        except ErrorLLMFatal as e:
+            typer.secho(f"Error de la API de Anthropic: {e}", fg=typer.colors.RED, err=True)
+            raise typer.Exit(1) from e
+        finally:
+            repo.cerrar_corrida(
+                corrida,
+                items_puntuados=resumen.puntuados,
+                tokens_entrada=resumen.consumo.entrada_total,
+                tokens_salida=resumen.consumo.salida,
+            )
+
+    typer.echo(
+        f"{resumen.puntuados} puntuados ({resumen.aprobados} con {pipeline.UMBRAL_DIARIO}+), "
+        f"{resumen.invalidos} inválidos, {resumen.fallidos} con error de API."
+    )
+    typer.echo(resumen.consumo.resumen(settings.modelo_puntaje))
 
 
 @app.command("completar-contenido")

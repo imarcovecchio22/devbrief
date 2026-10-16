@@ -5,7 +5,7 @@ tablas. La conexión está en autocommit y las operaciones que tienen que ser
 atómicas abren su propia transacción.
 """
 
-from collections.abc import Iterator, Sequence
+from collections.abc import Iterator, Mapping, Sequence
 from contextlib import contextmanager
 from dataclasses import dataclass
 from typing import Any, Self
@@ -14,7 +14,9 @@ import psycopg
 from psycopg.types.json import Jsonb
 
 from diario.dedupe import Grupo, Referencia
+from diario.llm.puntaje import ItemAPuntuar
 from diario.normalizacion import recortar
+from diario.secciones import SECCION_POR_DEFECTO
 
 
 @dataclass(frozen=True, slots=True)
@@ -143,6 +145,56 @@ class Repositorio:
             with self._db.transaction(), self._db.cursor() as cur:
                 cur.executemany("UPDATE items SET contenido_resumido = %s WHERE id = %s", filas)
         return len(filas)
+
+    # ---------- puntaje ----------
+
+    def items_para_puntuar(
+        self, *, max_intentos: int, limite: int, areas: Mapping[str, str]
+    ) -> list[ItemAPuntuar]:
+        """Items sin puntaje que no agotaron sus intentos, los más nuevos primero.
+
+        `areas` mapea nombre de fuente -> área (viene de fuentes.yaml, no de la base).
+        """
+        filas = self._db.execute(
+            """
+            SELECT i.id, i.titulo, i.url_canonica, i.contenido_resumido, i.fecha_publicacion,
+                   array_agg(f.fuente ORDER BY f.fuente), array_agg(f.senal ORDER BY f.fuente)
+            FROM items i
+            JOIN item_fuentes f ON f.item_id = i.id
+            WHERE i.puntaje IS NULL AND i.intentos_puntaje < %s
+            GROUP BY i.id
+            ORDER BY i.id DESC
+            LIMIT %s
+            """,
+            (max_intentos, limite),
+        ).fetchall()
+        return [
+            ItemAPuntuar(
+                id=item_id,
+                titulo=titulo,
+                url=url,
+                contenido=contenido,
+                fecha_publicacion=fecha,
+                fuentes=tuple(zip(fuentes, senales, strict=True)),
+                # Si la fuente ya no está en fuentes.yaml, cae en la sección general.
+                area=next((areas[f] for f in fuentes if f in areas), SECCION_POR_DEFECTO),
+            )
+            for item_id, titulo, url, contenido, fecha, fuentes, senales in filas
+        ]
+
+    def guardar_puntaje(self, item_id: int, puntaje: int, seccion: str, motivo: str) -> None:
+        self._db.execute(
+            """
+            UPDATE items SET puntaje = %s, seccion = %s, motivo = %s, puntuado_en = now()
+            WHERE id = %s
+            """,
+            (puntaje, seccion, motivo, item_id),
+        )
+
+    def registrar_intento_fallido(self, item_id: int) -> None:
+        self._db.execute(
+            "UPDATE items SET intentos_puntaje = intentos_puntaje + 1 WHERE id = %s", (item_id,)
+        )
 
     # ---------- corridas ----------
 

@@ -29,6 +29,16 @@ class Settings(BaseSettings):
     # Texto que se guarda por item (y se manda al LLM): ~500 tokens.
     max_caracteres_contenido: int = 2000
 
+    # Modelos (IDs verificados en la documentación de Anthropic el 2026-10-16).
+    modelo_puntaje: str = "claude-haiku-5-5"
+    modelo_redaccion: str = "claude-sonnet-5-5"
+    # Respuestas inválidas antes de dejar de reintentar un item.
+    max_intentos_puntaje: int = 2
+    # Tope de items a puntuar por corrida: protege el costo si algo se desborda.
+    max_items_puntaje: int = 300
+    # Llamadas en paralelo al LLM.
+    hilos_llm: int = 4
+
     @property
     def ruta_fuentes(self) -> Path:
         return self.config_dir / "fuentes.yaml"
