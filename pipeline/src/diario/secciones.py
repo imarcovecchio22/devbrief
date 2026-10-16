@@ -9,6 +9,9 @@ import unicodedata
 
 SECCIONES: dict[str, str] = {
     "ia": "IA aplicada",
+    "ia_global": "Avances en IA",
+    "robotica": "Robótica",
+    "espacio": "Satélites y espacio",
     "dotnet": ".NET y C#",
     "python": "Python",
     "web": "Stack web",

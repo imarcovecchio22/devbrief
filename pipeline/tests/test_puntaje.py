@@ -312,3 +312,19 @@ def test_error_fatal_corta_la_etapa(repo: Repositorio) -> None:
 
     assert len(llm.lotes) == 1  # cortó en el primer lote, sin lanzar los demás
     assert all(fila == (None, None, 0) for fila in _estado(repo).values())
+
+
+def test_reiniciar_puntajes_no_toca_lo_publicado(repo: Repositorio) -> None:
+    _guardar(repo, "publicado", "pendiente", "sin-puntuar")
+    repo._db.execute(
+        "UPDATE items SET puntaje = 8, puntuado_en = now() WHERE titulo <> 'sin-puntuar'"
+    )
+    repo._db.execute(
+        "INSERT INTO diarios (fecha, contenido) VALUES ('2026-10-16', '{}') RETURNING id"
+    )
+    repo._db.execute("UPDATE items SET diario_id = 1 WHERE titulo = 'publicado'")
+
+    assert repo.reiniciar_puntajes(dias=3) == 1
+    estado = _estado(repo)
+    assert estado["publicado"][0] == 8
+    assert estado["pendiente"] == (None, None, 0)

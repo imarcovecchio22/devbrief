@@ -86,6 +86,12 @@ def puntuar(
     limite: int | None = typer.Option(
         None, help="Máximo de items a puntuar (default: MAX_ITEMS_PUNTAJE)."
     ),
+    repuntuar: bool = typer.Option(
+        False,
+        "--repuntuar",
+        help="Volver a puntuar los items de la ventana que no salieron en un diario "
+        "(después de cambiar el perfil).",
+    ),
 ) -> None:
     """Puntúa con el LLM los items nuevos según config/perfil.md."""
     settings = Settings()
@@ -95,6 +101,9 @@ def puntuar(
     areas = {f.nombre: f.area for f in _cargar(settings, solo_activas=False)}
 
     with Repositorio.conectar(url) as repo:
+        if repuntuar:
+            reiniciados = repo.reiniciar_puntajes(settings.ventana_dias)
+            typer.echo(f"{reiniciados} items vuelven a puntuarse con el perfil actual.")
         items = repo.items_para_puntuar(
             max_intentos=settings.max_intentos_puntaje,
             limite=limite or settings.max_items_puntaje,

@@ -182,6 +182,24 @@ class Repositorio:
             for item_id, titulo, url, contenido, fecha, fuentes, senales in filas
         ]
 
+    def reiniciar_puntajes(self, dias: int) -> int:
+        """Borra el puntaje de los items recientes que todavía no salieron en un diario.
+
+        Para usar después de cambiar el perfil. Lo ya publicado no se toca.
+        """
+        cursor = self._db.execute(
+            """
+            UPDATE items
+            SET puntaje = NULL, seccion = NULL, motivo = NULL, puntuado_en = NULL,
+                intentos_puntaje = 0
+            WHERE diario_id IS NULL
+              AND puntuado_en IS NOT NULL
+              AND fecha_ingesta >= now() - make_interval(days => %s)
+            """,
+            (dias,),
+        )
+        return cursor.rowcount
+
     def guardar_puntaje(self, item_id: int, puntaje: int, seccion: str, motivo: str) -> None:
         self._db.execute(
             """

@@ -55,6 +55,118 @@
   area: ia
   activa: false
 
+# ---------- Avances en IA (todo tipo, todos los países) ----------
+- nombre: The Decoder
+  tipo: rss
+  url: https://the-decoder.com/feed/
+  area: ia_global
+  activa: true
+
+- nombre: MIT Technology Review IA
+  tipo: rss
+  url: https://www.technologyreview.com/topic/artificial-intelligence/feed
+  area: ia_global
+  activa: true
+
+- nombre: TechCrunch IA
+  tipo: rss
+  url: https://techcrunch.com/category/artificial-intelligence/feed/
+  area: ia_global
+  activa: true
+
+- nombre: Google DeepMind
+  tipo: rss
+  url: https://deepmind.google/blog/rss.xml
+  area: ia_global
+  activa: true
+
+- nombre: Google AI
+  tipo: rss
+  url: https://blog.google/technology/ai/rss/
+  area: ia_global
+  activa: true
+
+- nombre: Import AI
+  tipo: rss
+  url: https://importai.substack.com/feed    # newsletter semanal
+  area: ia_global
+  activa: true
+
+- nombre: ChinAI
+  tipo: rss
+  url: https://chinai.substack.com/feed      # IA en China, semanal
+  area: ia_global
+  activa: true
+
+- nombre: SCMP Tech
+  tipo: rss
+  url: https://www.scmp.com/rss/36/feed      # tecnología en China
+  area: ia_global
+  activa: true
+
+- nombre: Pandaily
+  tipo: rss
+  url: https://pandaily.com/feed/            # empresas tech chinas
+  area: ia_global
+  activa: true
+
+- nombre: Habr IA
+  tipo: rss
+  url: https://habr.com/ru/rss/hub/artificial_intelligence/   # comunidad rusa, en ruso
+  area: ia_global
+  activa: true
+
+- nombre: VentureBeat IA
+  tipo: rss
+  url: https://venturebeat.com/category/ai/feed/   # bloquea clientes automáticos (429)
+  area: ia_global
+  activa: false
+
+# ---------- Robótica ----------
+- nombre: IEEE Spectrum Robotics
+  tipo: rss
+  url: https://spectrum.ieee.org/feeds/topic/robotics.rss
+  area: robotica
+  activa: true
+
+- nombre: The Robot Report
+  tipo: rss
+  url: https://www.therobotreport.com/feed/
+  area: robotica
+  activa: true
+
+- nombre: r/robotics
+  tipo: reddit
+  sub: robotics
+  min_puntaje: 200
+  area: robotica
+  activa: false
+
+# ---------- Satélites y espacio ----------
+- nombre: SpaceNews
+  tipo: rss
+  url: https://spacenews.com/feed/
+  area: espacio
+  activa: true
+
+- nombre: NASASpaceflight
+  tipo: rss
+  url: https://www.nasaspaceflight.com/feed/
+  area: espacio
+  activa: true
+
+- nombre: ESA
+  tipo: rss
+  url: https://www.esa.int/rssfeed/Our_Activities/Space_News
+  area: espacio
+  activa: true
+
+- nombre: Space.com
+  tipo: rss
+  url: https://www.space.com/feeds/all       # mucho volumen, mezcla notas de entretenimiento
+  area: espacio
+  activa: true
+
 # ---------- .NET ----------
 - nombre: .NET Blog
   tipo: rss
