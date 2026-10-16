@@ -12,7 +12,13 @@ from diario.config import ErrorConfig, Fuente, cargar_fuentes
 from diario.diagnostico import Estado, probar_fuentes
 from diario.fuentes import crear_cliente
 from diario.llm.claude_code import ClienteClaudeCode
-from diario.llm.cliente import ClienteAnthropic, ClienteLLM, ErrorLLMFatal
+from diario.llm.cliente import (
+    ClienteAnthropic,
+    ClienteLLM,
+    ErrorLLMFatal,
+    ErrorLLMTransitorio,
+)
+from diario.llm.respuesta import ErrorRespuestaLLM
 from diario.repositorio import Repositorio
 from diario.settings import Settings
 
@@ -142,6 +148,54 @@ def puntuar(
     )
     por_suscripcion = settings.llm_backend == "claude-code"
     typer.echo(resumen.consumo.resumen(settings.modelo_puntaje, por_suscripcion=por_suscripcion))
+
+
+@app.command()
+def redactar(
+    forzar: bool = typer.Option(False, "--forzar", help="Regenerar aunque ya exista."),
+    fecha: datetime | None = typer.Option(
+        None, formats=["%Y-%m-%d"], help="Fecha del diario (default: hoy en Argentina)."
+    ),
+) -> None:
+    """Escribe el diario del día con las noticias mejor puntuadas."""
+    settings = Settings()
+    url = _requerir(settings.database_url, "DATABASE_URL")
+    llm = _crear_llm(settings)
+    perfil = settings.ruta_perfil.read_text(encoding="utf-8")
+    dia = fecha.date() if fecha else pipeline.hoy_argentina()
+
+    with Repositorio.conectar(url) as repo:
+        corrida = repo.iniciar_corrida()
+        resumen = pipeline.ResumenRedaccion(fecha=dia)
+        try:
+            resumen = pipeline.redactar(
+                repo,
+                llm,
+                perfil=perfil,
+                modelo=settings.modelo_redaccion,
+                fecha=dia,
+                dias=settings.ventana_dias,
+                forzar=forzar,
+            )
+        except (ErrorLLMFatal, ErrorLLMTransitorio, ErrorRespuestaLLM) as e:
+            repo.cerrar_corrida(corrida, errores=[{"etapa": "redaccion", "error": str(e)}])
+            typer.secho(f"No se pudo redactar el diario: {e}", fg=typer.colors.RED, err=True)
+            raise typer.Exit(1) from e
+        repo.cerrar_corrida(
+            corrida,
+            tokens_entrada=resumen.consumo.entrada_total,
+            tokens_salida=resumen.consumo.salida,
+        )
+
+    if resumen.salteado:
+        typer.echo(f"Diario del {dia}: no se generó ({resumen.salteado}).")
+        return
+    typer.echo(
+        f"Diario del {dia} guardado: {resumen.notas} notas y {resumen.radar} en el radar "
+        f"(de {resumen.candidatos} candidatas)."
+    )
+    por_suscripcion = settings.llm_backend == "claude-code"
+    typer.echo(resumen.consumo.resumen(settings.modelo_redaccion, por_suscripcion=por_suscripcion))
 
 
 @app.command("completar-contenido")

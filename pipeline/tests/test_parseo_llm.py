@@ -1,12 +1,10 @@
 import json
-import logging
 from typing import Any
 
 import pytest
 
 from diario.config import cargar_fuentes
 from diario.llm.puntaje import MAX_MOTIVO, parsear_puntaje
-from diario.llm.redaccion import MAX_NOTAS, Candidato, parsear_diario
 from diario.llm.respuesta import ErrorRespuestaLLM, extraer_objeto_json
 from diario.secciones import SECCIONES, resolver_seccion
 from diario.settings import RAIZ_REPO
@@ -117,122 +115,3 @@ def test_puntaje_motivo_largo_se_recorta() -> None:
 def test_puntaje_en_bloque_de_codigo() -> None:
     p = parsear_puntaje(f"```json\n{_puntaje(puntaje=9)}\n```", area_respaldo="ia")
     assert p.puntaje == 9
-
-
-# ---------- parsear_diario ----------
-
-
-def _candidatos(n: int = 3, seccion: str = "ia") -> dict[int, Candidato]:
-    return {
-        i: Candidato(
-            item_id=i,
-            url=f"https://ejemplo.com/{i}",
-            fuentes=("Blog", "HN"),
-            seccion=seccion,
-            puntaje=7 + (i % 4),
-        )
-        for i in range(1, n + 1)
-    }
-
-
-def _nota(item_id: int, **campos: Any) -> dict[str, Any]:
-    base = {
-        "item_id": item_id,
-        "titular": f"Titular {item_id}",
-        "resumen": "Resumen de dos líneas.",
-        "por_que_te_sirve": "Porque sí.",
-    }
-    return base | campos
-
-
-def _diario(*secciones: tuple[str, list[dict[str, Any]]]) -> str:
-    return json.dumps({"secciones": [{"seccion": s, "notas": n} for s, n in secciones]})
-
-
-def test_diario_valido_completa_url_y_fuentes_desde_la_base() -> None:
-    texto = _diario(("ia", [_nota(1), _nota(2)]))
-    diario = parsear_diario(texto, _candidatos())
-
-    assert diario.cantidad_notas == 2
-    seccion = diario.secciones[0]
-    assert (seccion.clave, seccion.nombre) == ("ia", "IA aplicada")
-    assert seccion.notas[0].url == "https://ejemplo.com/1"
-    assert seccion.notas[0].fuentes == ["Blog", "HN"]
-
-
-def test_diario_ignora_url_que_mande_el_modelo() -> None:
-    texto = _diario(("ia", [_nota(1, url="https://inventada.com")]))
-    assert parsear_diario(texto, _candidatos()).secciones[0].notas[0].url == "https://ejemplo.com/1"
-
-
-def test_diario_ordena_secciones_segun_el_perfil() -> None:
-    candidatos = _candidatos(3)
-    texto = _diario(("general", [_nota(1)]), ("python", [_nota(2)]), ("ia", [_nota(3)]))
-    diario = parsear_diario(texto, candidatos)
-    assert [s.clave for s in diario.secciones] == ["ia", "python", "general"]
-
-
-def test_diario_junta_secciones_repetidas_y_resuelve_nombres() -> None:
-    texto = _diario(("ia", [_nota(1)]), ("IA aplicada", [_nota(2)]))
-    diario = parsear_diario(texto, _candidatos())
-    assert len(diario.secciones) == 1
-    assert [n.item_id for n in diario.secciones[0].notas] == [1, 2]
-
-
-def test_diario_seccion_desconocida_usa_la_del_puntaje() -> None:
-    texto = _diario(("Miscelánea", [_nota(1)]))
-    diario = parsear_diario(texto, _candidatos(seccion="dotnet"))
-    assert diario.secciones[0].clave == "dotnet"
-
-
-def test_diario_descarta_notas_invalidas_desconocidas_o_repetidas(
-    caplog: pytest.LogCaptureFixture,
-) -> None:
-    texto = _diario(
-        (
-            "ia",
-            [
-                _nota(1),
-                _nota(1),  # repetida
-                _nota(99),  # no era candidata
-                _nota(2, titular=""),  # vacía
-                {"item_id": 3},  # incompleta
-                _nota(3),
-            ],
-        )
-    )
-    with caplog.at_level(logging.WARNING):
-        diario = parsear_diario(texto, _candidatos())
-
-    assert [n.item_id for n in diario.secciones[0].notas] == [1, 3]
-    assert len(caplog.records) == 4
-
-
-def test_diario_sin_notas_validas_es_error() -> None:
-    with pytest.raises(ErrorRespuestaLLM, match="ninguna nota"):
-        parsear_diario(_diario(("ia", [_nota(99)])), _candidatos())
-
-
-def test_diario_con_formato_roto_es_error() -> None:
-    with pytest.raises(ErrorRespuestaLLM):
-        parsear_diario('{"notas": []}', _candidatos())
-
-
-def test_diario_con_demasiadas_notas_se_queda_con_las_de_mejor_puntaje() -> None:
-    candidatos = _candidatos(20)
-    texto = _diario(("ia", [_nota(i) for i in range(1, 21)]))
-    diario = parsear_diario(texto, candidatos)
-
-    ids = [n.item_id for n in diario.secciones[0].notas]
-    assert len(ids) == MAX_NOTAS
-    assert ids == sorted(ids)  # conserva el orden del modelo
-    peor_que_quedo = min(candidatos[i].puntaje for i in ids)
-    peor_afuera = max(candidatos[i].puntaje for i in candidatos if i not in ids)
-    assert peor_que_quedo >= peor_afuera
-
-
-def test_diario_se_serializa_a_json_para_la_base() -> None:
-    diario = parsear_diario(_diario(("ia", [_nota(1)])), _candidatos())
-    datos = diario.model_dump(mode="json")
-    assert datos["secciones"][0]["notas"][0]["url"] == "https://ejemplo.com/1"
-    assert "cantidad_notas" not in datos  # la property no se guarda

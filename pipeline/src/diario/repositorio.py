@@ -8,6 +8,7 @@ atómicas abren su propia transacción.
 from collections.abc import Iterator, Mapping, Sequence
 from contextlib import contextmanager
 from dataclasses import dataclass
+from datetime import date
 from typing import Any, Self
 
 import psycopg
@@ -15,6 +16,13 @@ from psycopg.types.json import Jsonb
 
 from diario.dedupe import Grupo, Referencia
 from diario.llm.puntaje import ItemAPuntuar
+from diario.llm.redaccion import (
+    SECCIONES_RADAR,
+    UMBRAL_RADAR,
+    UMBRAL_RELLENO,
+    Candidato,
+    Diario,
+)
 from diario.normalizacion import recortar
 from diario.secciones import SECCION_POR_DEFECTO
 
@@ -213,6 +221,74 @@ class Repositorio:
         self._db.execute(
             "UPDATE items SET intentos_puntaje = intentos_puntaje + 1 WHERE id = %s", (item_id,)
         )
+
+    # ---------- diarios ----------
+
+    def diario_existe(self, fecha: date) -> bool:
+        fila = self._db.execute("SELECT 1 FROM diarios WHERE fecha = %s", (fecha,)).fetchone()
+        return fila is not None
+
+    def candidatos_diario(self, *, dias: int, fecha: date) -> list[Candidato]:
+        """Items puntuados de la ventana que pueden entrar al diario de `fecha`.
+
+        Incluye los ya publicados en el diario de esa misma fecha, por si se
+        está regenerando (`--forzar`).
+        """
+        filas = self._db.execute(
+            """
+            SELECT i.id, i.titulo, i.url_canonica, i.contenido_resumido,
+                   array_agg(f.fuente ORDER BY f.visto_en), i.seccion, i.puntaje, i.motivo
+            FROM items i
+            JOIN item_fuentes f ON f.item_id = i.id
+            LEFT JOIN diarios d ON d.id = i.diario_id
+            WHERE (i.diario_id IS NULL OR d.fecha = %(fecha)s)
+              AND i.puntaje IS NOT NULL
+              AND i.fecha_ingesta >= now() - make_interval(days => %(dias)s)
+              AND (i.puntaje >= %(relleno)s
+                   OR (i.seccion = ANY(%(radar)s) AND i.puntaje >= %(umbral_radar)s))
+            GROUP BY i.id
+            ORDER BY i.puntaje DESC, i.id
+            """,
+            {
+                "fecha": fecha,
+                "dias": dias,
+                "relleno": UMBRAL_RELLENO,
+                "radar": sorted(SECCIONES_RADAR),
+                "umbral_radar": UMBRAL_RADAR,
+            },
+        ).fetchall()
+        return [
+            Candidato(
+                item_id=item_id,
+                titulo=titulo,
+                url=url,
+                contenido=contenido,
+                fuentes=tuple(fuentes),
+                seccion=seccion,
+                puntaje=puntaje,
+                motivo=motivo or "",
+            )
+            for item_id, titulo, url, contenido, fuentes, seccion, puntaje, motivo in filas
+        ]
+
+    def guardar_diario(self, diario: Diario) -> int:
+        """Guarda el diario (reemplazando el de esa fecha, si había) y marca sus items.
+
+        Todo en una transacción: si algo falla, el diario anterior queda intacto.
+        """
+        with self._db.transaction():
+            # Al borrar el diario viejo, sus items quedan con diario_id NULL (FK SET NULL).
+            self._db.execute("DELETE FROM diarios WHERE fecha = %s", (diario.fecha,))
+            fila = self._db.execute(
+                "INSERT INTO diarios (fecha, contenido) VALUES (%s, %s) RETURNING id",
+                (diario.fecha, Jsonb(diario.model_dump(mode="json"))),
+            ).fetchone()
+            assert fila is not None
+            diario_id = int(fila[0])
+            self._db.execute(
+                "UPDATE items SET diario_id = %s WHERE id = ANY(%s)", (diario_id, diario.item_ids)
+            )
+        return diario_id
 
     # ---------- corridas ----------
 

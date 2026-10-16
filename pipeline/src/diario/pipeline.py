@@ -4,7 +4,8 @@ import logging
 from collections.abc import Sequence
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import date, datetime
+from zoneinfo import ZoneInfo
 
 import httpx
 
@@ -26,6 +27,13 @@ from diario.llm.puntaje import (
     armar_system,
     parsear_lote,
 )
+from diario.llm.redaccion import (
+    SCHEMA_DIARIO,
+    UMBRAL_RELLENO,
+    parsear_diario,
+)
+from diario.llm.redaccion import armar_mensaje as armar_mensaje_redaccion
+from diario.llm.redaccion import armar_system as armar_system_redaccion
 from diario.llm.respuesta import ErrorRespuestaLLM
 from diario.modelos import ItemCrudo
 from diario.repositorio import Repositorio
@@ -235,5 +243,76 @@ def ingestar(
         resumen.items_nuevos,
         resumen.apariciones_nuevas,
         len(errores),
+    )
+    return resumen
+
+
+# ---------- redacción ----------
+
+ZONA_HORARIA = ZoneInfo("America/Argentina/Buenos_Aires")
+_MAX_TOKENS_REDACCION = 16000
+_EFFORT_REDACCION: Effort = "high"  # una llamada por día: que escriba bien
+
+
+def hoy_argentina() -> date:
+    return datetime.now(ZONA_HORARIA).date()
+
+
+@dataclass(slots=True)
+class ResumenRedaccion:
+    fecha: date
+    diario_id: int | None = None
+    candidatos: int = 0
+    notas: int = 0
+    radar: int = 0
+    salteado: str | None = None  # motivo, si no se generó
+    consumo: ConsumoTokens = field(default_factory=ConsumoTokens)
+
+
+def redactar(
+    repo: Repositorio,
+    llm: ClienteLLM,
+    *,
+    perfil: str,
+    modelo: str,
+    fecha: date,
+    dias: int,
+    forzar: bool = False,
+) -> ResumenRedaccion:
+    """Escribe y guarda el diario de `fecha`. Si ya existe, no hace nada (salvo `forzar`)."""
+    resumen = ResumenRedaccion(fecha=fecha)
+    if repo.diario_existe(fecha) and not forzar:
+        resumen.salteado = "ya existe el diario de esa fecha (usá --forzar para regenerarlo)"
+        return resumen
+
+    candidatos = repo.candidatos_diario(dias=dias, fecha=fecha)
+    resumen.candidatos = len(candidatos)
+    if not any(c.puntaje >= UMBRAL_RELLENO for c in candidatos):
+        resumen.salteado = f"no hay noticias con puntaje {UMBRAL_RELLENO} o más"
+        return resumen
+
+    respuesta = llm.pedir_json(
+        modelo=modelo,
+        system=armar_system_redaccion(perfil),
+        mensaje=armar_mensaje_redaccion(candidatos, fecha),
+        schema=SCHEMA_DIARIO,
+        max_tokens=_MAX_TOKENS_REDACCION,
+        effort=_EFFORT_REDACCION,
+    )
+    resumen.consumo += respuesta.consumo
+    if respuesta.stop_reason in ("refusal", "max_tokens"):
+        raise ErrorRespuestaLLM(f"La redacción terminó con stop_reason={respuesta.stop_reason}")
+
+    diario = parsear_diario(respuesta.texto, {c.item_id: c for c in candidatos}, fecha)
+    resumen.diario_id = repo.guardar_diario(diario)
+    resumen.notas = diario.cantidad_notas
+    resumen.radar = len(diario.radar)
+    logger.info(
+        "Diario %s: %d notas y %d en el radar, de %d candidatas. %s",
+        fecha,
+        resumen.notas,
+        resumen.radar,
+        resumen.candidatos,
+        resumen.consumo.resumen(modelo),
     )
     return resumen
