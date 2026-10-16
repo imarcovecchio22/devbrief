@@ -1,0 +1,376 @@
+<?xml version="1.0" encoding="UTF-8"?><rss version="2.0"
+	xmlns:content="http://purl.org/rss/1.0/modules/content/"
+	xmlns:wfw="http://wellformedweb.org/CommentAPI/"
+	xmlns:dc="http://purl.org/dc/elements/1.1/"
+	xmlns:atom="http://www.w3.org/2005/Atom"
+	xmlns:sy="http://purl.org/rss/1.0/modules/syndication/"
+	xmlns:slash="http://purl.org/rss/1.0/modules/slash/"
+	>
+
+<channel>
+	<title>.NET Blog</title>
+	<atom:link href="https://devblogs.microsoft.com/dotnet/feed/" rel="self" type="application/rss+xml" />
+	<link>https://devblogs.microsoft.com/dotnet/</link>
+	<description>Free. Cross-platform. Open source. A developer platform for building all your apps.</description>
+	<lastBuildDate>Thu, 15 Oct 2026 16:48:41 +0000</lastBuildDate>
+	<language>en-US</language>
+	<sy:updatePeriod>
+	hourly	</sy:updatePeriod>
+	<sy:updateFrequency>
+	1	</sy:updateFrequency>
+	
+
+<image>
+	<url>https://devblogs.microsoft.com/dotnet/wp-content/uploads/sites/10/2024/10/Microsoft-favicon-48x48.jpg</url>
+	<title>.NET Blog</title>
+	<link>https://devblogs.microsoft.com/dotnet/</link>
+	<width>32</width>
+	<height>32</height>
+</image> 
+	<item>
+		<title>Introducing dotnetup: A toolchain manager for .NET</title>
+		<link>https://devblogs.microsoft.com/dotnet/introducing-dotnetup/</link>
+					<comments>https://devblogs.microsoft.com/dotnet/introducing-dotnetup/#comments</comments>
+		
+		<dc:creator><![CDATA[Chet Husk]]></dc:creator>
+		<pubDate>Thu, 15 Oct 2026 16:50:00 +0000</pubDate>
+				<category><![CDATA[.NET]]></category>
+		<category><![CDATA[Linux]]></category>
+		<category><![CDATA[Maintenance & Updates]]></category>
+		<category><![CDATA[Developer Tools]]></category>
+		<category><![CDATA[dotnet cli]]></category>
+		<category><![CDATA[dotnetup]]></category>
+		<category><![CDATA[nightly builds]]></category>
+		<category><![CDATA[runtimes]]></category>
+		<guid isPermaLink="false">https://devblogs.microsoft.com/dotnet/?p=61046</guid>
+
+					<description><![CDATA[<p>Learn how the new dotnetup tool helps macOS and Linux developers install, manage, and update user-local .NET SDKs and runtimes.</p>
+<p>The post <a href="https://devblogs.microsoft.com/dotnet/introducing-dotnetup/">Introducing dotnetup: A toolchain manager for .NET</a> appeared first on <a href="https://devblogs.microsoft.com/dotnet">.NET Blog</a>.</p>
+]]></description>
+										<content:encoded><![CDATA[<p>Getting started with .NET on macOS and Linux has historically meant navigating a plethora of options: system package managers like <code>apt</code> or <code>brew</code>, platform-specific tarballs, or standalone shell scripts like <code>dotnet-install.sh</code>. While those methods have served us well, they often collide with administrative permissions, leave files scattered across root directories, or make keeping multiple runtime versions side-by-side more awkward than it should be.</p>
+<p>That&#8217;s why we&#8217;re introducing the public preview of <code>dotnetup</code>, a new .NET toolchain manager built to install, manage, and update .NET SDKs and runtimes directly in your user account.</p>
+<h2>Why dotnetup?</h2>
+<p>If you&#8217;ve spent time in ecosystems like Rust (<code>rustup</code>) or Node (<code>nvm</code>), you&#8217;re already familiar with the power of a dedicated toolchain manager. The core goal of <code>dotnetup</code> is to drastically reduce concept count and friction when getting a .NET environment running:</p>
+<ul>
+<li><strong>Consistent ux</strong>: The same commands and tools across every platform, regardless of the details of the installation</li>
+<li><strong>Non-admin by default</strong>: Everything lives comfortably in user-owned folders, not system-owned &#8211; meaning zero need for elevated permissions.</li>
+<li><strong>Side-by-side runtime management</strong>: Keep multiple servicing versions, preview channels, and daily builds installed at once without them stepping on each other&#8217;s toes.</li>
+<li><strong>Track intent</strong>: Instead of managing versions, track majors or feature bands and let the tools keep you updated each month</li>
+<li><strong>Respect for project pinning</strong>: Works seamlessly with your existing <code>global.json</code> files so team builds remain predictable and deterministic.</li>
+</ul>
+<p>Let&#8217;s walk through how to get started and how to use <code>dotnetup</code> for common day-to-day tasks.</p>
+<h2>Installing dotnetup and getting started</h2>
+<p>To get <code>dotnetup</code> on macOS or Linux, run the bootstrap script in your terminal:</p>
+<p><strong>macOS (Zsh):</strong></p>
+<pre><code class="language-bash">curl -fsSL https://aka.ms/dotnetup/get-dotnetup.sh | zsh</code></pre>
+<p><strong>Linux (Bash):</strong></p>
+<pre><code class="language-bash">curl -fsSL https://aka.ms/dotnetup/get-dotnetup.sh | bash</code></pre>
+<p><strong>PowerShell (<code>pwsh</code>):</strong></p>
+<pre><code class="language-powershell">irm https://aka.ms/dotnetup/get-dotnetup.ps1 | iex</code></pre>
+<p>Once the script pulls down the binary, initialize your environment:</p>
+<pre><code class="language-bash">dotnetup init</code></pre>
+<p>The <code>init</code> command sets up your shell profile so that <code>dotnet</code> is immediately available in your terminal sessions and fetches the latest stable .NET SDK.</p>
+<p><div style="width: 640px;" class="wp-video"><video class="wp-video-shortcode" id="video-61046-1" width="640" height="360" preload="metadata" controls="controls"><source type="video/mp4" src="https://devblogs.microsoft.com/dotnet/wp-content/uploads/sites/10/2026/10/dotnetup-get-started.mp4?_=1" /><a href="https://devblogs.microsoft.com/dotnet/wp-content/uploads/sites/10/2026/10/dotnetup-get-started.mp4">https://devblogs.microsoft.com/dotnet/wp-content/uploads/sites/10/2026/10/dotnetup-get-started.mp4</a></video></div></p>
+<p>Let&#8217;s check what&#8217;s installed in our local environment:</p>
+<pre><code class="language-bash">dotnetup list</code></pre>
+<p>You&#8217;ll see a clean inventory of the SDKs and runtimes currently managed by <code>dotnetup</code> right in your home folder.</p>
+<h2>Keeping runtimes fresh month-over-month</h2>
+<p>Every month the .NET team ships servicing updates with security fixes and quality improvements. Keeping your local dev machine up to date helps you build and test against those fixes. For self-contained applications, you also need to republish and redeploy with the updated runtime. Updating your machine does not patch applications you have already shipped.</p>
+<p>When using system installs, you may not be in control of your ability to update. With <code>dotnetup</code>, staying current is a one-liner:</p>
+<pre><code class="language-bash">dotnetup update</code></pre>
+<p>This command resolves your tracked SDK and runtime channels again and installs the latest matching versions. For example, <code>10.0</code> tracks updates within .NET 10, while <code>latest</code> follows the latest stable SDK, including new major releases. Exact-version requirements stay pinned, so an installation requested as <code>10.0.3</code> will not advance during an update.</p>
+<p>If you only want to install or refresh a specific runtime flavor, like the ASP.NET Core runtime on .NET 10, you can target it cleanly:</p>
+<pre><code class="language-bash">dotnetup runtime install aspnetcore@10.0</code></pre>
+<p><div style="width: 640px;" class="wp-video"><video class="wp-video-shortcode" id="video-61046-2" width="640" height="360" preload="metadata" controls="controls"><source type="video/mp4" src="https://devblogs.microsoft.com/dotnet/wp-content/uploads/sites/10/2026/10/dotnetup-update-runtimes.mp4?_=2" /><a href="https://devblogs.microsoft.com/dotnet/wp-content/uploads/sites/10/2026/10/dotnetup-update-runtimes.mp4">https://devblogs.microsoft.com/dotnet/wp-content/uploads/sites/10/2026/10/dotnetup-update-runtimes.mp4</a></video></div></p>
+<p>After a successful update, <code>dotnetup</code> automatically removes installed components that no remaining requirement needs. Versions that another channel or exact-version requirement still needs stay installed.</p>
+<p>When you no longer need a tracked channel or exact version, remove that requirement with the corresponding <code>sdk uninstall</code> or <code>runtime uninstall</code> command. <code>dotnetup</code> then cleans up the installations that are no longer needed. See <a href="https://learn.microsoft.com/dotnet/core/tools/dotnetup/usecases/update-installations">updating tracked installations</a> for more details.</p>
+<h2>Testing nightly and preview builds</h2>
+<p>Beyond routine monthly servicing, many developers want to test bug fixes or check out new runtime capabilities before they hit stable release channels. Previously, testing a nightly runtime build meant hunting down raw installer tarballs from GitHub, manually unpacking them into custom directories, and tweaking environment variables by hand.</p>
+<p><code>dotnetup</code> treats previews and nightlies as first-class citizens. You can install preview SDKs side-by-side with your stable setup:</p>
+<pre><code class="language-bash">dotnetup sdk install preview</code></pre>
+<p><div style="width: 640px;" class="wp-video"><video class="wp-video-shortcode" id="video-61046-3" width="640" height="360" preload="metadata" controls="controls"><source type="video/mp4" src="https://devblogs.microsoft.com/dotnet/wp-content/uploads/sites/10/2026/10/dotnetup-nightly-install.mp4?_=3" /><a href="https://devblogs.microsoft.com/dotnet/wp-content/uploads/sites/10/2026/10/dotnetup-nightly-install.mp4">https://devblogs.microsoft.com/dotnet/wp-content/uploads/sites/10/2026/10/dotnetup-nightly-install.mp4</a></video></div></p>
+<p>Or pull down the latest daily runtime build to verify an issue fix:</p>
+<pre><code class="language-bash">dotnetup runtime install daily</code></pre>
+<p>Or grab an entire SDK to check out the entire toolchain:</p>
+<pre><code class="language-bash">dotnetup sdk install daily</code></pre>
+<p>You get the flexibility to test daily builds across your user account and clean them up easily!</p>
+<h2>Updating <code>dotnetup</code> itself</h2>
+<p>We&#8217;ll be pushing features and fixes to <code>dotnetup</code> over time, and you can get them easily:</p>
+<pre><code class="language-bash">dotnetup self update</code></pre>
+<h2>Common questions</h2>
+<p>Here are quick answers to a few questions you might have:</p>
+<h3>I could do all of this with <code>dotnet-install.[sh|ps1]</code></h3>
+<p>That&#8217;s not a question.</p>
+<p>But yeah, you could do <em>most</em> of this with the install scripts.
+What you miss out on is</p>
+<ul>
+<li><em>management</em> of the installed SDKs and Runtimes</li>
+<li>signature and checksum validation of the installed SDKs and Runtimes</li>
+<li>faster installation of multiple SDKs and Runtimes</li>
+<li>a unified CLI surface for doing this on every platform</li>
+</ul>
+<h3>Does dotnetup need sudo or root rights?</h3>
+<p>Nope. <code>dotnetup</code> is currently built for non-admin, user-local operation. All SDKs, runtimes, and metadata live entirely within your user directory.</p>
+<p>In a future release we&#8217;ll be adding support for managing the system-level installs on Windows because of how prevalent those
+are on that operating system.</p>
+<h3>Can I use dotnetup in CI pipelines?</h3>
+<p>Absolutely. Because <code>dotnetup</code> doesn&#8217;t require root privileges and runs smoothly non-interactively, it&#8217;s a great fit for containerized or ephemeral CI workers where you need to spin up specific SDK or nightly runtime versions on the fly.</p>
+<h3>What&#8217;s on the roadmap for <code>dotnetup</code>?</h3>
+<p>As mentioned, we&#8217;ll be looking into support for Windows admin
+installers, but we also want to integrate <code>dotnetup</code> into CI/CD systems
+like GitHub Actions and Azure DevOps &#8211; ideally through replacing parts of the implementations of those tools today that rely on the dotnet-install scripts.</p>
+<p>We also want to iterate on the user experience to better fit how
+you all use the tool, and flesh out agent skills so that automated
+assistants use the tooling more naturally and reach for it by default.</p>
+<h3>Where should I go for more details?</h3>
+<p>For the full CLI reference, advanced configuration options, and deep dives, head over to the <a href="https://learn.microsoft.com/dotnet/core/tools/dotnetup">dotnetup documentation on Microsoft Learn</a>.</p>
+<p>If you have feedback, run into bugs, or want to share your thoughts on the experience, please drop by the <a href="https://github.com/dotnet/sdk/discussions/categories/dotnetup">dotnet/sdk discussions on GitHub</a>. We&#8217;d love to hear how it works for you, or how we can make it better!</p>
+<p>The post <a href="https://devblogs.microsoft.com/dotnet/introducing-dotnetup/">Introducing dotnetup: A toolchain manager for .NET</a> appeared first on <a href="https://devblogs.microsoft.com/dotnet">.NET Blog</a>.</p>
+]]></content:encoded>
+					
+					<wfw:commentRss>https://devblogs.microsoft.com/dotnet/introducing-dotnetup/feed/</wfw:commentRss>
+			<slash:comments>7</slash:comments>
+		
+		<enclosure url="https://devblogs.microsoft.com/dotnet/wp-content/uploads/sites/10/2026/10/dotnetup-get-started.mp4" length="1066071" type="video/mp4" />
+<enclosure url="https://devblogs.microsoft.com/dotnet/wp-content/uploads/sites/10/2026/10/dotnetup-update-runtimes.mp4" length="186660" type="video/mp4" />
+<enclosure url="https://devblogs.microsoft.com/dotnet/wp-content/uploads/sites/10/2026/10/dotnetup-nightly-install.mp4" length="214360" type="video/mp4" />
+
+			<image url="https://devblogs.microsoft.com/dotnet/wp-content/uploads/sites/10/2026/10/introducing-dotnetup.webp" type="image/jpeg" />
+	</item>
+		<item>
+		<title>Announcing .NET 11 Release Candidate 2</title>
+		<link>https://devblogs.microsoft.com/dotnet/dotnet-11-rc-2/</link>
+					<comments>https://devblogs.microsoft.com/dotnet/dotnet-11-rc-2/#comments</comments>
+		
+		<dc:creator><![CDATA[.NET Team]]></dc:creator>
+		<pubDate>Tue, 13 Oct 2026 19:40:00 +0000</pubDate>
+				<category><![CDATA[.NET]]></category>
+		<category><![CDATA[.NET MAUI]]></category>
+		<category><![CDATA[ASP.NET Core]]></category>
+		<category><![CDATA[F#]]></category>
+		<category><![CDATA[NuGet]]></category>
+		<category><![CDATA[WinForms]]></category>
+		<category><![CDATA[.NET 11]]></category>
+		<category><![CDATA[Featured]]></category>
+		<guid isPermaLink="false">https://devblogs.microsoft.com/dotnet/?p=61028</guid>
+
+					<description><![CDATA[<p>.NET 11 Release Candidate 2 is available with improvements across libraries, runtime, SDK, MSBuild, NuGet, F#, ASP.NET Core, .NET MAUI, and Windows Forms.</p>
+<p>The post <a href="https://devblogs.microsoft.com/dotnet/dotnet-11-rc-2/">Announcing .NET 11 Release Candidate 2</a> appeared first on <a href="https://devblogs.microsoft.com/dotnet">.NET Blog</a>.</p>
+]]></description>
+										<content:encoded><![CDATA[<p>.NET 11 Release Candidate 2 is now available. This is our second release
+candidate, which comes with a
+<a href="https://dotnet.microsoft.com/platform/support/policy/dotnet-core#previews">go-live support license</a>
+so you can confidently use this release for your production applications. This
+release of .NET 11 is supported in the new
+<a href="https://aka.ms/VS2026Insiders">Visual Studio 2026 Insiders</a> release alongside
+Visual Studio Code with the C# Dev Kit. Check out the full release notes below
+and get started today.</p>
+<p><div  class="d-flex justify-content-center"><a class="cta_button_link btn-primary mb-24" href="https://get.dot.net/11" target="_blank">Download .NET 11 RC2</a></div></p>
+<p>This release contains the following highlights and improvements.</p>
+<h2><strong><img src="https://s.w.org/images/core/emoji/17.0.2/72x72/1f4da.png" alt="📚" class="wp-smiley" style="height: 1em; max-height: 1em;" /> Libraries</strong></h2>
+<ul>
+<li><a href="https://github.com/dotnet/core/blob/main/release-notes/11.0/preview/rc2/libraries.md#read-cbor-incrementally">Read CBOR incrementally</a></li>
+<li><a href="https://github.com/dotnet/core/blob/main/release-notes/11.0/preview/rc2/libraries.md#experimental-composite-ml-kem-and-hpke-apis">Experimental composite ML-KEM and HPKE APIs</a></li>
+<li><a href="https://github.com/dotnet/core/blob/main/release-notes/11.0/preview/rc2/libraries.md#format-dataannotations-messages-with-attribute-specific-arguments">Format DataAnnotations messages with attribute-specific arguments</a></li>
+<li><a href="https://github.com/dotnet/core/blob/main/release-notes/11.0/preview/rc2/libraries.md#configure-initial-http2-concurrency">Configure initial HTTP/2 concurrency</a></li>
+<li><a href="https://github.com/dotnet/core/blob/main/release-notes/11.0/preview/rc2/libraries.md">Full Release Notes</a></li>
+</ul>
+<h2><strong><img src="https://s.w.org/images/core/emoji/17.0.2/72x72/23f1.png" alt="⏱" class="wp-smiley" style="height: 1em; max-height: 1em;" /> Runtime</strong></h2>
+<ul>
+<li><a href="https://github.com/dotnet/core/blob/main/release-notes/11.0/preview/rc2/runtime.md#changes-since-the-previous-preview">File locking on iOS and tvOS is disabled by default</a></li>
+<li><a href="https://github.com/dotnet/core/blob/main/release-notes/11.0/preview/rc2/runtime.md">Full Release Notes</a></li>
+</ul>
+<h2><strong><img src="https://s.w.org/images/core/emoji/17.0.2/72x72/1f6e0.png" alt="🛠" class="wp-smiley" style="height: 1em; max-height: 1em;" /> SDK</strong></h2>
+<ul>
+<li><a href="https://github.com/dotnet/core/blob/main/release-notes/11.0/preview/rc2/sdk.md#quoted-file-level-directive-values">Quoted file-level directive values</a></li>
+<li><a href="https://github.com/dotnet/core/blob/main/release-notes/11.0/preview/rc2/sdk.md#msbuild-properties-in-launch-profile-arguments">MSBuild properties in launch-profile arguments</a></li>
+<li><a href="https://github.com/dotnet/core/blob/main/release-notes/11.0/preview/rc2/sdk.md">Full Release Notes</a></li>
+</ul>
+<h2><strong><img src="https://s.w.org/images/core/emoji/17.0.2/72x72/1f9f1.png" alt="🧱" class="wp-smiley" style="height: 1em; max-height: 1em;" /> MSBuild</strong></h2>
+<ul>
+<li><a href="https://github.com/dotnet/core/blob/main/release-notes/11.0/preview/rc2/msbuild.md#faster-wildcard-matching-during-project-evaluation">Faster wildcard matching during project evaluation</a></li>
+<li><a href="https://github.com/dotnet/core/blob/main/release-notes/11.0/preview/rc2/msbuild.md">Full Release Notes</a></li>
+</ul>
+<h2><strong><img src="https://s.w.org/images/core/emoji/17.0.2/72x72/1f4e6.png" alt="📦" class="wp-smiley" style="height: 1em; max-height: 1em;" /> NuGet</strong></h2>
+<ul>
+<li><a href="https://github.com/dotnet/core/blob/main/release-notes/11.0/preview/rc2/nuget.md#configure-minimum-package-publication-age-from-the-cli">Configure minimum package publication age from the CLI</a></li>
+<li><a href="https://github.com/dotnet/core/blob/main/release-notes/11.0/preview/rc2/nuget.md">Full Release Notes</a></li>
+</ul>
+<h2><strong>F#</strong></h2>
+<ul>
+<li><a href="https://github.com/dotnet/core/blob/main/release-notes/11.0/preview/rc2/fsharp.md#runtime-async-support">Runtime async support</a></li>
+<li><a href="https://github.com/dotnet/core/blob/main/release-notes/11.0/preview/rc2/fsharp.md#reraise-in-computation-expressions">reraise in computation expressions</a></li>
+<li><a href="https://github.com/dotnet/core/blob/main/release-notes/11.0/preview/rc2/fsharp.md#require-named-arguments-for-selected-apis">Require named arguments for selected APIs</a></li>
+<li><a href="https://github.com/dotnet/core/blob/main/release-notes/11.0/preview/rc2/fsharp.md#lower-allocations-in-fsharpcore-collections">Lower allocations in FSharp.Core collections</a></li>
+<li><a href="https://github.com/dotnet/core/blob/main/release-notes/11.0/preview/rc2/fsharp.md#compiler-memory-usage-improvements">Compiler memory usage improvements</a></li>
+<li><a href="https://github.com/dotnet/core/blob/main/release-notes/11.0/preview/rc2/fsharp.md#bound-concurrent-asynchronous-work">Bound concurrent asynchronous work</a></li>
+<li><a href="https://github.com/dotnet/core/blob/main/release-notes/11.0/preview/rc2/fsharp.md#trimming-and-native-aot-improvements">Trimming and Native AOT improvements</a></li>
+<li><a href="https://github.com/dotnet/core/blob/main/release-notes/11.0/preview/rc2/fsharp.md">Full Release Notes</a></li>
+</ul>
+<h2><strong><img src="https://s.w.org/images/core/emoji/17.0.2/72x72/1f310.png" alt="🌐" class="wp-smiley" style="height: 1em; max-height: 1em;" /> ASP.NET Core</strong></h2>
+<ul>
+<li><a href="https://github.com/dotnet/core/blob/main/release-notes/11.0/preview/rc2/aspnetcore.md#quickgrid-virtualization-apis-are-no-longer-experimental"><code>QuickGrid</code> virtualization APIs are no longer experimental</a></li>
+<li><a href="https://github.com/dotnet/core/blob/main/release-notes/11.0/preview/rc2/aspnetcore.md">Full Release Notes</a></li>
+</ul>
+<h2><strong><img src="https://s.w.org/images/core/emoji/17.0.2/72x72/1f4f1.png" alt="📱" class="wp-smiley" style="height: 1em; max-height: 1em;" /> .NET MAUI</strong></h2>
+<ul>
+<li><a href="https://github.com/dotnet/core/blob/main/release-notes/11.0/preview/rc2/dotnetmaui.md#create-an-app-with-c-ui">Create an app with C# UI</a></li>
+<li><a href="https://github.com/dotnet/core/blob/main/release-notes/11.0/preview/rc2/dotnetmaui.md#use-apple-icon-composer-assets">Use Apple Icon Composer assets</a></li>
+<li><a href="https://github.com/dotnet/core/blob/main/release-notes/11.0/preview/rc2/dotnetmaui.md#evaluate-the-apple-shell-handler">Evaluate the Apple Shell handler</a></li>
+<li><a href="https://github.com/dotnet/core/blob/main/release-notes/11.0/preview/rc2/dotnetmaui.md#xaml-authoring-and-hot-reload">XAML authoring and Hot Reload</a></li>
+<li><a href="https://github.com/dotnet/core/blob/main/release-notes/11.0/preview/rc2/dotnetmaui.md#net-for-android">.NET for Android</a></li>
+<li><a href="https://github.com/dotnet/core/blob/main/release-notes/11.0/preview/rc2/dotnetmaui.md#apple-platforms-net-for-ios-mac-catalyst-macos-tvos">Apple platforms (.NET for iOS, Mac Catalyst, macOS, tvOS)</a></li>
+<li><a href="https://github.com/dotnet/core/blob/main/release-notes/11.0/preview/rc2/dotnetmaui.md">Full Release Notes</a></li>
+</ul>
+<h2><strong><img src="https://s.w.org/images/core/emoji/17.0.2/72x72/1f5a5.png" alt="🖥" class="wp-smiley" style="height: 1em; max-height: 1em;" /> Windows Forms</strong></h2>
+<ul>
+<li><a href="https://github.com/dotnet/core/blob/main/release-notes/11.0/preview/rc2/winforms.md#visual-styles-and-appearance">Visual styles and appearance</a></li>
+<li><a href="https://github.com/dotnet/core/blob/main/release-notes/11.0/preview/rc2/winforms.md#react-to-windows-visual-and-accessibility-settings">React to Windows visual and accessibility settings</a></li>
+<li><a href="https://github.com/dotnet/core/blob/main/release-notes/11.0/preview/rc2/winforms.md#deferred-form-reveal">Deferred form reveal</a></li>
+<li><a href="https://github.com/dotnet/core/blob/main/release-notes/11.0/preview/rc2/winforms.md#visual-basic-application-framework">Visual Basic Application Framework</a></li>
+<li><a href="https://github.com/dotnet/core/blob/main/release-notes/11.0/preview/rc2/winforms.md#suspend-painting-and-layout-during-bulk-updates">Suspend painting and layout during bulk updates</a></li>
+<li><a href="https://github.com/dotnet/core/blob/main/release-notes/11.0/preview/rc2/winforms.md#new-kioskmodemanager-component">New KioskModeManager component</a></li>
+<li><a href="https://github.com/dotnet/core/blob/main/release-notes/11.0/preview/rc2/winforms.md#new-designer-guiding-analyzers">New Designer-guiding analyzers</a></li>
+<li><a href="https://github.com/dotnet/core/blob/main/release-notes/11.0/preview/rc2/winforms.md">Full Release Notes</a></li>
+</ul>
+<h2><img src="https://s.w.org/images/core/emoji/17.0.2/72x72/1f680.png" alt="🚀" class="wp-smiley" style="height: 1em; max-height: 1em;" /> Get started</h2>
+<p>To get started with .NET 11,
+<a href="https://get.dot.net/11">install the .NET 11 SDK</a>.</p>
+<p>If you&#8217;re on Windows, we recommend installing the latest version of
+<a href="https://aka.ms/vs/insiders">Visual Studio 2026 Insiders</a>.</p>
+<p>You can also use Visual Studio Code and the
+<a href="https://marketplace.visualstudio.com/items?itemName=ms-dotnettools.csdevkit">C# Dev Kit</a>
+extension with .NET 11.</p>
+<h2><img src="https://s.w.org/images/core/emoji/17.0.2/72x72/1f4e6.png" alt="📦" class="wp-smiley" style="height: 1em; max-height: 1em;" /> Join a .NET community standup</h2>
+<p>Join us each week and engage with the developers and product managers behind
+.NET for
+<a href="https://dotnet.microsoft.com/live/community-standup">community standups</a>.</p>
+<h2><img src="https://s.w.org/images/core/emoji/17.0.2/72x72/1f4e2.png" alt="📢" class="wp-smiley" style="height: 1em; max-height: 1em;" /> .NET 11 Discussions</h2>
+<p>The team has been making release announcements alongside full
+<a href="https://github.com/dotnet/core/tree/main/release-notes/11.0">release notes</a>
+on the
+<a href="https://github.com/dotnet/core/discussions/categories/news">dotnet/core GitHub Discussions</a>.</p>
+<h2><img src="https://s.w.org/images/core/emoji/17.0.2/72x72/1f514.png" alt="🔔" class="wp-smiley" style="height: 1em; max-height: 1em;" /> Stay up-to-date with .NET 11</h2>
+<p>You can stay up-to-date with all the features of .NET 11 with:</p>
+<ul>
+<li><a href="https://learn.microsoft.com/dotnet/core/whats-new/dotnet-11/overview">What&#8217;s new in .NET 11</a></li>
+<li><a href="https://learn.microsoft.com/dotnet/csharp/whats-new/csharp-15">What&#8217;s new in C# 15</a></li>
+<li><a href="https://learn.microsoft.com/aspnet/core/release-notes/aspnetcore-11">What&#8217;s new in ASP.NET Core</a></li>
+<li><a href="https://learn.microsoft.com/ef/core/what-is-new/ef-core-11.0/whatsnew">What&#8217;s new in Entity Framework Core</a></li>
+<li><a href="https://learn.microsoft.com/dotnet/core/compatibility/11">Breaking Changes in .NET 11</a></li>
+<li><a href="https://github.com/dotnet/core/blob/main/release-notes/11.0/README.md">.NET 11 Releases</a></li>
+</ul>
+<p>The post <a href="https://devblogs.microsoft.com/dotnet/dotnet-11-rc-2/">Announcing .NET 11 Release Candidate 2</a> appeared first on <a href="https://devblogs.microsoft.com/dotnet">.NET Blog</a>.</p>
+]]></content:encoded>
+					
+					<wfw:commentRss>https://devblogs.microsoft.com/dotnet/dotnet-11-rc-2/feed/</wfw:commentRss>
+			<slash:comments>2</slash:comments>
+		
+		
+			<image url="https://devblogs.microsoft.com/dotnet/wp-content/uploads/sites/10/2026/10/dotnet-11-rc-2.webp" type="image/jpeg" />
+	</item>
+		<item>
+		<title>.NET and .NET Framework October 2026 servicing releases updates</title>
+		<link>https://devblogs.microsoft.com/dotnet/dotnet-and-dotnet-framework-october-2026-servicing-updates/</link>
+					<comments>https://devblogs.microsoft.com/dotnet/dotnet-and-dotnet-framework-october-2026-servicing-updates/#respond</comments>
+		
+		<dc:creator><![CDATA[Rahul Bhandari (MSFT), Tara Overfield]]></dc:creator>
+		<pubDate>Mon, 12 Oct 2026 20:00:00 +0000</pubDate>
+				<category><![CDATA[.NET]]></category>
+		<category><![CDATA[.NET Framework]]></category>
+		<category><![CDATA[Maintenance & Updates]]></category>
+		<category><![CDATA[.net framework]]></category>
+		<guid isPermaLink="false">https://devblogs.microsoft.com/dotnet/?p=61032</guid>
+
+					<description><![CDATA[<p>A recap of the latest servicing updates for .NET and .NET Framework for October 2026.</p>
+<p>The post <a href="https://devblogs.microsoft.com/dotnet/dotnet-and-dotnet-framework-october-2026-servicing-updates/">.NET and .NET Framework October 2026 servicing releases updates</a> appeared first on <a href="https://devblogs.microsoft.com/dotnet">.NET Blog</a>.</p>
+]]></description>
+										<content:encoded><![CDATA[<p>Welcome to our combined .NET servicing updates for October 2026. Let&#8217;s get into the latest release of .NET and .NET Framework. Here&#8217;s a quick overview of what&#8217;s new in our servicing releases:</p>
+<h2>Security improvements</h2>
+<p>.NET has been refreshed with the latest update as of October 13, 2026. This update contains security and non-security fixes.</p>
+<p>For the full list of CVEs, see the CVE list for each supported version:</p>
+<table>
+<thead>
+<tr>
+<th>.NET version</th>
+<th>CVE list</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>.NET 10.0</td>
+<td><a href="https://github.com/dotnet/core/blob/main/release-notes/10.0/cve.md">CVE list</a></td>
+</tr>
+<tr>
+<td>.NET 9.0</td>
+<td><a href="https://github.com/dotnet/core/blob/main/release-notes/9.0/cve.md">CVE list</a></td>
+</tr>
+<tr>
+<td>.NET 8.0</td>
+<td><a href="https://github.com/dotnet/core/blob/main/release-notes/8.0/cve.md">CVE list</a></td>
+</tr>
+</tbody>
+</table>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>.NET 10.0</th>
+<th>.NET 9.0</th>
+<th>.NET 8.0</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Release Notes</td>
+<td><a href="https://github.com/dotnet/core/blob/main/release-notes/10.0/10.0.13/10.0.13.md">10.0.13</a></td>
+<td><a href="https://github.com/dotnet/core/blob/main/release-notes/9.0/9.0.21/9.0.21.md">9.0.21</a></td>
+<td><a href="https://github.com/dotnet/core/blob/main/release-notes/8.0/8.0.32/8.0.32.md">8.0.32</a></td>
+</tr>
+<tr>
+<td>Installers and binaries</td>
+<td><a href="https://dotnet.microsoft.com/download/dotnet/10.0">10.0.13</a></td>
+<td><a href="https://dotnet.microsoft.com/download/dotnet/9.0">9.0.21</a></td>
+<td><a href="https://dotnet.microsoft.com/download/dotnet/8.0">8.0.32</a></td>
+</tr>
+<tr>
+<td>Container Images</td>
+<td><a href="https://mcr.microsoft.com/catalog?search=dotnet/">images</a></td>
+<td><a href="https://mcr.microsoft.com/catalog?search=dotnet/">images</a></td>
+<td><a href="https://mcr.microsoft.com/catalog?search=dotnet/">images</a></td>
+</tr>
+<tr>
+<td>Linux packages</td>
+<td><a href="https://github.com/dotnet/core/blob/main/release-notes/10.0/install-linux.md">10.0</a></td>
+<td><a href="https://github.com/dotnet/core/blob/main/release-notes/9.0/install-linux.md">9.0</a></td>
+<td><a href="https://github.com/dotnet/core/blob/main/release-notes/8.0/install-linux.md">8.0</a></td>
+</tr>
+<tr>
+<td>Known Issues</td>
+<td><a href="https://github.com/dotnet/core/blob/main/release-notes/10.0/known-issues.md">10.0</a></td>
+<td><a href="https://github.com/dotnet/core/blob/main/release-notes/9.0/known-issues.md">9.0</a></td>
+<td><a href="https://github.com/dotnet/core/blob/main/release-notes/8.0/known-issues.md">8.0</a></td>
+</tr>
+</tbody>
+</table>
+<h3>Release changelogs</h3>
+<ul>
+<li>ASP.NET Core: <a href="https://github.com/dotnet/aspnetcore/issues?q=milestone%3A10.0.13%20is%3Aclosed%20label%3Aservicing-approved">10.0.13</a></li>
+<li>Runtime: <a href="https://github.com/dotnet/runtime/issues?q=milestone%3A10.0.13%20is%3Aclosed%20label%3Aservicing-approved">10.0.13</a> | <a href="https://github.com/dotnet/runtime/issues?q=milestone%3A9.0.21%20is%3Aclosed%20label%3Aservicing-approved">9.0.21</a></li>
+</ul>
+<h2>.NET Framework October 2026 Updates</h2>
+<p>This month, there are new security and non-security updates available. For recent .NET Framework servicing updates, be sure to browse our <a href="https://learn.microsoft.com/dotnet/framework/release-notes/release-notes">release notes for .NET Framework</a> for more details.</p>
+<h2>See you next month</h2>
+<p>That&#8217;s it for this month, make sure you update to the latest service release today.</p>
+<p>The post <a href="https://devblogs.microsoft.com/dotnet/dotnet-and-dotnet-framework-october-2026-servicing-updates/">.NET and .NET Framework October 2026 servicing releases updates</a> appeared first on <a href="https://devblogs.microsoft.com/dotnet">.NET Blog</a>.</p>
+]]></content:encoded>
+					
+					<wfw:commentRss>https://devblogs.microsoft.com/dotnet/dotnet-and-dotnet-framework-october-2026-servicing-updates/feed/</wfw:commentRss>
+			<slash:comments>0</slash:comments>
+		
+		
+			<image url="https://devblogs.microsoft.com/dotnet/wp-content/uploads/sites/10/2026/10/october2026.webp" type="image/jpeg" />
+	</item>
+		
+	</channel>
+</rss>

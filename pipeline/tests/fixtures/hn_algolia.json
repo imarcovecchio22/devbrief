@@ -1,0 +1,116 @@
+{
+  "exhaustive": {
+    "nbHits": true,
+    "typo": true
+  },
+  "exhaustiveNbHits": true,
+  "exhaustiveTypo": true,
+  "hits": [
+    {
+      "_tags": [
+        "story",
+        "author_speckx",
+        "story_50117746",
+        "front_page"
+      ],
+      "author": "speckx",
+      "children": [
+        50119844,
+        50118167,
+        50117982
+      ],
+      "created_at": "2026-10-16T12:52:08Z",
+      "created_at_i": 1792155128,
+      "num_comments": 109,
+      "objectID": "50117746",
+      "points": 164,
+      "story_id": 50117746,
+      "title": "I Love Software Rendering",
+      "updated_at": "2026-10-16T15:46:34Z",
+      "url": "https://www.jamesfmackenzie.com/2026/10/13/i-love-software-rendering/"
+    },
+    {
+      "_tags": [
+        "story",
+        "author_gurst",
+        "story_50114342",
+        "front_page"
+      ],
+      "author": "gurst",
+      "children": [
+        50119757,
+        50117896,
+        50119367
+      ],
+      "created_at": "2026-10-16T05:11:28Z",
+      "created_at_i": 1792127488,
+      "num_comments": 30,
+      "objectID": "50114342",
+      "points": 166,
+      "story_id": 50114342,
+      "title": "The Folders Programming Language",
+      "updated_at": "2026-10-16T15:46:34Z",
+      "url": "https://danieltemkin.com/esolangs/folders"
+    },
+    {
+      "_tags": [
+        "story",
+        "author_chanana",
+        "story_50112739",
+        "front_page"
+      ],
+      "author": "chanana",
+      "children": [
+        50113416,
+        50112821,
+        50117128
+      ],
+      "created_at": "2026-10-16T01:43:17Z",
+      "created_at_i": 1792114997,
+      "num_comments": 57,
+      "objectID": "50112739",
+      "points": 219,
+      "story_id": 50112739,
+      "title": "Any window from your Mac, on your iPhone and iPad",
+      "updated_at": "2026-10-16T15:45:49Z",
+      "url": "https://github.com/Saffsanity/sill"
+    },
+    {
+      "_tags": [
+        "story",
+        "author_shekhar101",
+        "story_50112657"
+      ],
+      "author": "shekhar101",
+      "children": [
+        50112892,
+        50112792,
+        50112695
+      ],
+      "created_at": "2026-10-16T01:32:45Z",
+      "created_at_i": 1792114365,
+      "num_comments": 733,
+      "objectID": "50112657",
+      "points": 474,
+      "story_id": 50112657,
+      "story_text": "<a href=\"https:&#x2F;&#x2F;www.youtube.com&#x2F;watch?v=7p5LxFdc-Qg\" rel=\"nofollow\">https:&#x2F;&#x2F;www.youtube.com&#x2F;watch?v=7p5LxFdc-Qg</a>",
+      "title": "Tesla Roadster",
+      "updated_at": "2026-10-16T15:46:34Z",
+      "url": "https://www.tesla.com/roadster"
+    }
+  ],
+  "hitsPerPage": 50,
+  "nbHits": 4,
+  "nbPages": 1,
+  "page": 0,
+  "params": "tags=story&numericFilters=points%3E%3D150%2Ccreated_at_i%3E1792079211&hitsPerPage=50&advancedSyntax=true&analyticsTags=backend",
+  "processingTimeMS": 1,
+  "processingTimingsMS": {
+    "_request": {
+      "roundTrip": 17
+    },
+    "total": 1
+  },
+  "query": "",
+  "serverTimeMS": 1
+}

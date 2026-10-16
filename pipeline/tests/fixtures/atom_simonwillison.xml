@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xml:lang="en-us" xmlns="http://www.w3.org/2005/Atom"><title>Simon Willison's Weblog</title><link href="http://simonwillison.net/" rel="alternate"/><link href="http://simonwillison.net/atom/everything/" rel="self"/><id>http://simonwillison.net/</id><updated>2026-10-15T19:47:52+00:00</updated><author><name>Simon Willison</name></author><entry><title>Chirp Pong</title><link href="https://simonwillison.net/2026/Oct/15/chirp-pong/" rel="alternate"/><published>2026-10-15T19:47:52+00:00</published><updated>2026-10-15T19:47:52+00:00</updated><id>https://simonwillison.net/2026/Oct/15/chirp-pong/</id><summary type="html">
+    
+        &lt;p&gt;&lt;strong&gt;Tool:&lt;/strong&gt; &lt;a href="https://tools.simonwillison.net/chirp-pong"&gt;Chirp Pong&lt;/a&gt;&lt;/p&gt;
+        &lt;p&gt;Another game experiment - I wanted to see if it was feasible to have a two player game on two separate phones running in static HTML where the networking code uses chirps sent via the microphone. It seems to work!&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;&lt;code&gt;Build a two player competitive pong like game where two players use their phones close to each other and the game state is sent via audio noises which the web microphone API can interpret - but add graphical and gameplay twists to make it a lot more fun and intertwine than pong&lt;/code&gt;&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;Claude Opus 5.5 Extra &lt;a href="https://claude.ai/code/session_019awUnNB7NoYd7noBNAsNdd"&gt;in Claude Code&lt;/a&gt;.&lt;/p&gt;
+    
+    
+        &lt;p&gt;Tags: &lt;a href="https://simonwillison.net/tags/game-design"&gt;game-design&lt;/a&gt;, &lt;a href="https://simonwillison.net/tags/ai"&gt;ai&lt;/a&gt;, &lt;a href="https://simonwillison.net/tags/generative-ai"&gt;generative-ai&lt;/a&gt;, &lt;a href="https://simonwillison.net/tags/llms"&gt;llms&lt;/a&gt;, &lt;a href="https://simonwillison.net/tags/claude-code"&gt;claude-code&lt;/a&gt;&lt;/p&gt;
+    
+
+</summary><category term="game-design"/><category term="ai"/><category term="generative-ai"/><category term="llms"/><category term="claude-code"/></entry><entry><title>Anthropic tells investors quarterly revenue up nearly 50% to $16.8bn ahead of IPO</title><link href="https://simonwillison.net/2026/Oct/15/anthropic-tells-investors/" rel="alternate"/><published>2026-10-15T13:04:03+00:00</published><updated>2026-10-15T13:04:03+00:00</updated><id>https://simonwillison.net/2026/Oct/15/anthropic-tells-investors/</id><summary type="html">
+    
+&lt;p&gt;&lt;strong&gt;&lt;a href="https://www.ft.com/content/11632d03-358c-454b-af95-d06d4072932b?syn-25a6b1a6=1"&gt;Anthropic tells investors quarterly revenue up nearly 50% to $16.8bn ahead of IPO&lt;/a&gt;&lt;/strong&gt;&lt;/p&gt;
+The phrase "told investors" appears four times in this FT article, which reports on Anthropic's day of hosting investors on Wednesday. Lots of details in here from "&lt;a href="https://simonwillison.net/2023/Nov/22/deciphering-clues/#hints-to-look-out-for"&gt;people with knowledge of the matter&lt;/a&gt;".&lt;/p&gt;
+&lt;p&gt;Key things I learned from the article:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;Q1 revenue (Jan/Feb/Mar) was "about $4.8bn"&lt;/li&gt;
+&lt;li&gt;Q2 (Apr/May/Jun) was $11.5bn&lt;/li&gt;
+&lt;li&gt;Q3 (Jul/Aug/Sep) was $16.8bn&lt;/li&gt;
+&lt;li&gt;In Q3: $1.70 in revenue for every $1 spent on "computing power"&lt;/li&gt;
+&lt;li&gt;Adjusted operating margins (excluding stock-based compensation) were 11%&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;This point about distillation is worth quoting in full (highlight mine):&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;The start-up has also clamped down on “distillation” — a controversial practice whereby rival AI labs train their models on the outputs of more advanced ones.&lt;/p&gt;
+&lt;p&gt;When rival companies “distil” their models from Anthropic’s models, that involves heavy usage and spending.&lt;/p&gt;
+&lt;p&gt;Anthropic told investors on Wednesday &lt;strong&gt;distillation accounted for 5 per cent to 7 per cent of revenue&lt;/strong&gt; and that they had cut it back “materially” in the third quarter of the year, said four people with direct knowledge of the matter.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;Napkin maths says that if distillation was 5% of their Q2 revenue (before they cut it back in Q3) then unnamed "other labs" spent over half a billion dollars distilling Anthropic's models in that quarter!&lt;/p&gt;
+&lt;p&gt;Also notable: Anthropic appear to no longer be leaning on "annualized run-rate revenue" (&lt;a href="https://simonwillison.net/2026/May/29/anthropic/"&gt;previously&lt;/a&gt;) in these communications to their investors.
+
+
+    &lt;p&gt;Tags: &lt;a href="https://simonwillison.net/tags/ai"&gt;ai&lt;/a&gt;, &lt;a href="https://simonwillison.net/tags/generative-ai"&gt;generative-ai&lt;/a&gt;, &lt;a href="https://simonwillison.net/tags/llms"&gt;llms&lt;/a&gt;, &lt;a href="https://simonwillison.net/tags/anthropic"&gt;anthropic&lt;/a&gt;&lt;/p&gt;
+
+
+
+</summary><category term="ai"/><category term="generative-ai"/><category term="llms"/><category term="anthropic"/></entry><entry><title>Tree Appreciator</title><link href="https://simonwillison.net/2026/Oct/14/tree-appreciator/" rel="alternate"/><published>2026-10-14T21:23:01+00:00</published><updated>2026-10-14T21:23:01+00:00</updated><id>https://simonwillison.net/2026/Oct/14/tree-appreciator/</id><summary type="html">
+    
+        &lt;p&gt;&lt;strong&gt;Tool:&lt;/strong&gt; &lt;a href="https://tools.simonwillison.net/tree-appreciator"&gt;Tree Appreciator&lt;/a&gt;&lt;/p&gt;
+        &lt;p&gt;Another game experiment with Claude. This one used the default Claude iPhone app (chat mode, not Claude Code mode), where I prompted Claude Opus 5.5 Max with:&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;&lt;code&gt;Build a three js game called "Tree appreciator" - it shows you two algorithmically generated trees and the game mechanics is about appreciating the differences between them. Think hard about how to make sure it is both fun and beautiful.&lt;/code&gt;&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;Somewhat embarrassingly given &lt;a href="https://simonwillison.net/2026/Sep/27/2026-in-llms-so-far/#simon-willison-2026-in-llms.059.webp"&gt;my recent talk&lt;/a&gt;, I've found that telling Opus 5.5 "make sure it is fun" works uncomfortably well. In this case Claude &lt;a href="https://claude.ai/share/ee7de555-f85c-4ff0-96cb-d51ed5e479e9"&gt;crunched for 3 hours and 7 minutes&lt;/a&gt; before retuning a cosy little spot-the-difference game with music and animation and achievements that's quite compelling to play.&lt;/p&gt;
+&lt;p&gt;&lt;img alt="Screenshot of a mobile spot-the-difference puzzle game with a dark interface. Header reads &amp;quot;No. 003 Acer autumnalis ‘Hid…&amp;quot; with subtitle &amp;quot;Autumn maple · A country lane in late a…&amp;quot; and icons for sound, a book, and help. Two nearly identical 3D-rendered scenes are stacked vertically, labeled &amp;quot;Fig. i&amp;quot; and &amp;quot;Fig. ii&amp;quot;, each showing a dark-trunked maple tree with red, orange and pale peach leaves, leaves falling through the air, a golden grassy field with a few small rocks, and hazy hills with pine silhouettes under a pale sky. Two differences are circled in blue in both images: circle &amp;quot;a&amp;quot; at the base of the trunk, where Fig. i has a small red mushroom that is missing in Fig. ii, and circle &amp;quot;b&amp;quot; in the right side of the canopy, where Fig. i has a patch of green leaves that are red in Fig. ii. The bottom bar shows &amp;quot;2 of 4&amp;quot;, a reset button, a &amp;quot;Hint&amp;quot; button with three filled and two empty dots, and a score of &amp;quot;1,803&amp;quot;." src="https://static.simonwillison.net/static/2026-10-14/image_crop_1320x2195_w1320_q0.7.webp" /&gt;&lt;/p&gt;
+    
+    
+        &lt;p&gt;Tags: &lt;a href="https://simonwillison.net/tags/game-design"&gt;game-design&lt;/a&gt;, &lt;a href="https://simonwillison.net/tags/javascript"&gt;javascript&lt;/a&gt;, &lt;a href="https://simonwillison.net/tags/ai"&gt;ai&lt;/a&gt;, &lt;a href="https://simonwillison.net/tags/generative-ai"&gt;generative-ai&lt;/a&gt;, &lt;a href="https://simonwillison.net/tags/llms"&gt;llms&lt;/a&gt;, &lt;a href="https://simonwillison.net/tags/claude"&gt;claude&lt;/a&gt;, &lt;a href="https://simonwillison.net/tags/vibe-coding"&gt;vibe-coding&lt;/a&gt;, &lt;a href="https://simonwillison.net/tags/three-js"&gt;three-js&lt;/a&gt;&lt;/p&gt;
+    
+
+</summary><category term="game-design"/><category term="javascript"/><category term="ai"/><category term="generative-ai"/><category term="llms"/><category term="claude"/><category term="vibe-coding"/><category term="three-js"/></entry></feed>
