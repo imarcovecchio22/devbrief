@@ -11,6 +11,7 @@ import httpx
 from diario.config import Fuente
 from diario.dedupe import agrupar
 from diario.fuentes import ErrorFuente, traer_items
+from diario.fuentes.articulos import descargar_textos
 from diario.modelos import ItemCrudo
 from diario.repositorio import Repositorio
 
@@ -53,6 +54,33 @@ def traer_todas(
             else:
                 items.extend(resultado)
     return items, errores
+
+
+@dataclass(frozen=True, slots=True)
+class ResumenContenido:
+    pendientes: int
+    completados: int
+
+
+def completar_contenido(
+    repo: Repositorio, cliente: httpx.Client, *, max_contenido: int
+) -> ResumenContenido:
+    """Baja el artículo de los items que llegaron sin texto (la mayoría de HN).
+
+    Solo toca items sin puntuar: como el puntaje se calcula en la misma
+    corrida, un sitio que bloquea la descarga se intenta una sola vez.
+    """
+    pendientes = repo.items_sin_contenido()
+    if not pendientes:
+        return ResumenContenido(pendientes=0, completados=0)
+
+    textos = descargar_textos(cliente, [url for _, url in pendientes])
+    completados = repo.actualizar_contenidos(
+        [(item_id, texto) for (item_id, _), texto in zip(pendientes, textos, strict=True)],
+        max_contenido,
+    )
+    logger.info("Contenido: %d de %d items sin texto completados", completados, len(pendientes))
+    return ResumenContenido(pendientes=len(pendientes), completados=completados)
 
 
 def ingestar(

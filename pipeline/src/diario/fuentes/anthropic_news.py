@@ -16,9 +16,10 @@ import httpx
 from selectolax.lexbor import LexborHTMLParser, LexborNode
 
 from diario.config import FuenteScrape
+from diario.fuentes.articulos import descargar_texto
 from diario.fuentes.base import ErrorFuente
 from diario.modelos import ItemCrudo
-from diario.normalizacion import html_a_texto, limpiar_espacios
+from diario.normalizacion import limpiar_espacios
 
 logger = logging.getLogger(__name__)
 
@@ -53,7 +54,8 @@ def traer(fuente: FuenteScrape, cliente: httpx.Client, desde: datetime | None) -
                 area=fuente.area,
                 url=t.url,
                 titulo=t.titulo,
-                contenido=_traer_cuerpo(cliente, t.url) or t.resumen,
+                # Si no se puede bajar la nota, queda el resumen del listado.
+                contenido=descargar_texto(cliente, t.url) or t.resumen,
                 fecha_publicacion=t.fecha,
             )
         )
@@ -80,24 +82,6 @@ def parsear_listado(html: str, base_url: str) -> list[Tarjeta]:
     if not tarjetas:
         raise ErrorFuente("No se encontró ninguna nota en el listado: ¿cambió el HTML?")
     return list(tarjetas.values())
-
-
-def extraer_articulo(html: str) -> str:
-    """Texto del cuerpo de una nota (sin menú ni pie del sitio)."""
-    arbol = LexborHTMLParser(html)
-    nodo = arbol.css_first("article") or arbol.css_first("main")
-    return html_a_texto(nodo.html or "") if nodo is not None else ""
-
-
-def _traer_cuerpo(cliente: httpx.Client, url: str) -> str:
-    # Si falla una nota no queremos perder la fuente entera: usamos el resumen.
-    try:
-        respuesta = cliente.get(url)
-        respuesta.raise_for_status()
-    except httpx.HTTPError as e:
-        logger.warning("No se pudo bajar %s: %s", url, e)
-        return ""
-    return extraer_articulo(respuesta.text)
 
 
 def _titulo(enlace: LexborNode) -> str:

@@ -118,6 +118,32 @@ class Repositorio:
 
         return ResultadoGuardado(items_nuevos=items_nuevos, apariciones_nuevas=apariciones_nuevas)
 
+    def items_sin_contenido(self) -> list[tuple[int, str]]:
+        """(id, url original) de los items pendientes de puntuar que no tienen texto."""
+        filas = self._db.execute(
+            """
+            SELECT i.id, min(f.url_original)
+            FROM items i
+            JOIN item_fuentes f ON f.item_id = i.id
+            WHERE i.contenido_resumido = '' AND i.puntaje IS NULL
+            GROUP BY i.id
+            ORDER BY i.id
+            """
+        ).fetchall()
+        return [(item_id, url) for item_id, url in filas]
+
+    def actualizar_contenidos(
+        self, contenidos: Sequence[tuple[int, str]], max_contenido: int
+    ) -> int:
+        """Guarda el texto (recortado) de cada (id, texto). Ignora los textos vacíos."""
+        filas = [
+            (recortar(texto, max_contenido), item_id) for item_id, texto in contenidos if texto
+        ]
+        if filas:
+            with self._db.transaction(), self._db.cursor() as cur:
+                cur.executemany("UPDATE items SET contenido_resumido = %s WHERE id = %s", filas)
+        return len(filas)
+
     # ---------- corridas ----------
 
     def iniciar_corrida(self) -> int:

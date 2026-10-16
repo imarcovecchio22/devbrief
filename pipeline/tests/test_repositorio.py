@@ -9,10 +9,11 @@ import httpx
 from diario.config import FuenteRss
 from diario.dedupe import Grupo, agrupar
 from diario.modelos import ItemCrudo
-from diario.pipeline import ingestar
+from diario.pipeline import completar_contenido, ingestar
 from diario.repositorio import Repositorio
 
 FIXTURES = Path(__file__).parent / "fixtures"
+HTML = {"content-type": "text/html; charset=utf-8"}
 
 
 def _item(
@@ -152,3 +153,41 @@ def test_ingestar_de_punta_a_punta_tolera_fuentes_caidas(repo: Repositorio) -> N
     assert segunda.items_nuevos == 0
     assert segunda.apariciones_nuevas == 0
     assert _contar(repo, "items") == 3
+
+
+# ---------- completar contenido ----------
+
+
+def test_completar_contenido_solo_toca_items_sin_texto_y_sin_puntaje(repo: Repositorio) -> None:
+    repo.guardar_grupos(
+        agrupar(
+            [
+                _item("https://a.com/vacio", "HN"),
+                _item("https://a.com/bloqueado", "HN"),
+                _item("https://a.com/con-texto", "Blog", contenido="ya tengo texto"),
+                _item("https://a.com/puntuado", "HN"),
+            ]
+        ),
+        max_contenido=100,
+    )
+    repo._db.execute("UPDATE items SET puntaje = 5 WHERE url_canonica = 'https://a.com/puntuado'")
+    pedidas: list[str] = []
+
+    def responder(request: httpx.Request) -> httpx.Response:
+        pedidas.append(request.url.path)
+        if request.url.path == "/bloqueado":
+            return httpx.Response(403)
+        return httpx.Response(200, text="<article>" + "texto " * 100 + "</article>", headers=HTML)
+
+    with httpx.Client(transport=httpx.MockTransport(responder)) as cliente:
+        resumen = completar_contenido(repo, cliente, max_contenido=50)
+
+    assert sorted(pedidas) == ["/bloqueado", "/vacio"]
+    assert (resumen.pendientes, resumen.completados) == (2, 1)
+    contenidos = dict(
+        repo._db.execute("SELECT url_canonica, contenido_resumido FROM items").fetchall()
+    )
+    assert contenidos["https://a.com/vacio"].startswith("texto texto")
+    assert len(contenidos["https://a.com/vacio"]) <= 50
+    assert contenidos["https://a.com/bloqueado"] == ""
+    assert contenidos["https://a.com/con-texto"] == "ya tengo texto"

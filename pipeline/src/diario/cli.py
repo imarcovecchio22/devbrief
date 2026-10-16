@@ -73,6 +73,18 @@ def ingestar(
         typer.secho(f"  falló {error['fuente']}: {error['error']}", fg=typer.colors.YELLOW)
 
 
+@app.command("completar-contenido")
+def completar_contenido_cmd() -> None:
+    """Baja el texto de los artículos que llegaron solo con título (ej. HN)."""
+    settings = Settings()
+    url = _requerir(settings.database_url, "DATABASE_URL")
+    with Repositorio.conectar(url) as repo, crear_cliente() as cliente:
+        resumen = pipeline.completar_contenido(
+            repo, cliente, max_contenido=settings.max_caracteres_contenido
+        )
+    typer.echo(f"{resumen.completados} de {resumen.pendientes} items sin texto completados.")
+
+
 @app.command()
 def fuentes(todas: bool = typer.Option(False, "--todas", help="Incluir las inactivas.")) -> None:
     """Lista las fuentes configuradas."""

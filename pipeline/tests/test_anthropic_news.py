@@ -6,9 +6,11 @@ import pytest
 
 from diario.config import FuenteScrape
 from diario.fuentes import ErrorFuente, anthropic_news, traer_items
+from diario.fuentes.articulos import extraer_texto_principal
 
 FIXTURES = Path(__file__).parent / "fixtures"
 BASE = "https://www.anthropic.com/news"
+HTML = {"content-type": "text/html; charset=utf-8"}
 
 
 def _leer(nombre: str) -> str:
@@ -60,7 +62,7 @@ def test_listado_prefiere_el_atributo_datetime() -> None:
 
 
 def test_articulo_extrae_solo_el_cuerpo() -> None:
-    texto = anthropic_news.extraer_articulo(_leer("anthropic_news_articulo.html"))
+    texto = extraer_texto_principal(_leer("anthropic_news_articulo.html"))
 
     assert "An update on independent evaluators" in texto
     assert "METR" in texto
@@ -89,9 +91,9 @@ def test_traer_filtra_por_ventana_y_baja_cada_nota() -> None:
     def responder(request: httpx.Request) -> httpx.Response:
         pedidas.append(request.url.path)
         if request.url.path == "/news":
-            return httpx.Response(200, text=_leer("anthropic_news_listado.html"))
+            return httpx.Response(200, text=_leer("anthropic_news_listado.html"), headers=HTML)
         if request.url.path == "/news/an-update-on-independent-evaluators":
-            return httpx.Response(200, text=_leer("anthropic_news_articulo.html"))
+            return httpx.Response(200, text=_leer("anthropic_news_articulo.html"), headers=HTML)
         return httpx.Response(404)
 
     desde = datetime(2026, 10, 14, tzinfo=UTC)
