@@ -1,1 +1,81 @@
 @import "tailwindcss";
+
+/*
+ * "Hora azul": el cielo antes del amanecer, que es cuando llega el diario.
+ * Un solo acento, el amarillo de las lámparas de sodio de la calle: marca
+ * "por qué te sirve" y el foco del teclado, nada más.
+ */
+:root {
+  --papel: #eef1f5;
+  --tinta: #13213a;
+  --tenue: #5b6b82;
+  --linea: #cbd3de;
+  --sodio: #f0b13c;
+  --sodio-texto: #8a5a00; /* el amarillo no tiene contraste como texto sobre papel claro */
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --papel: #0f1a2b;
+    --tinta: #e4e9f1;
+    --tenue: #93a1b6;
+    --linea: #24334a;
+    --sodio: #f0b13c;
+    --sodio-texto: #f0b13c;
+  }
+}
+
+@theme inline {
+  --color-papel: var(--papel);
+  --color-tinta: var(--tinta);
+  --color-tenue: var(--tenue);
+  --color-linea: var(--linea);
+  --color-sodio: var(--sodio);
+  --color-sodio-texto: var(--sodio-texto);
+
+  --font-sans: var(--fuente-grotesca);
+  --font-serif: var(--fuente-serif);
+}
+
+html {
+  background: var(--papel);
+  color: var(--tinta);
+  color-scheme: light dark;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  font-family: var(--fuente-serif), Georgia, serif;
+  font-size: 1.0625rem;
+  line-height: 1.65;
+  text-rendering: optimizeLegibility;
+  /* Los resúmenes traen nombres de variables, paquetes o URLs sin espacios
+     (CLAUDE_CODE_IDLE_COMPACT_MIN_TOKENS): que corten antes que desbordar. */
+  overflow-wrap: anywhere;
+}
+
+:focus-visible {
+  outline: 2px solid var(--sodio);
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+
+/* Saltar a una sección no debe dejar el título pegado al borde. */
+:target,
+section[id] {
+  scroll-margin-top: 1.5rem;
+}
+
+/* El triángulo de <details> lo dibujamos nosotros (rota al abrir). */
+summary {
+  list-style: none;
+}
+summary::-webkit-details-marker {
+  display: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+}
