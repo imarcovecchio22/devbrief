@@ -1,0 +1,54 @@
+name: Diario
+
+on:
+  schedule:
+    # 09:00 UTC = 06:00 en Argentina (no tiene horario de verano).
+    # GitHub no garantiza la hora exacta: puede arrancar unos minutos tarde.
+    - cron: "0 9 * * *"
+  workflow_dispatch:
+    inputs:
+      forzar:
+        description: "Regenerar el diario de hoy aunque ya exista"
+        type: boolean
+        default: false
+
+# Nunca dos corridas a la vez (por ejemplo, el cron y una manual).
+concurrency:
+  group: diario
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  correr:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      # Token de la suscripción de Claude (`claude setup-token`): sin créditos de API.
+      CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+      LLM_BACKEND: claude-code
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Instalar Claude Code
+        run: |
+          npm install --global @anthropic-ai/claude-code
+          claude --version
+
+      - uses: astral-sh/setup-uv@v6
+        with:
+          working-directory: pipeline
+
+      - name: Instalar el pipeline
+        working-directory: pipeline
+        run: uv sync --frozen
+
+      - name: Correr el pipeline
+        working-directory: pipeline
+        run: uv run diario run ${{ inputs.forzar && '--forzar' || '' }}
