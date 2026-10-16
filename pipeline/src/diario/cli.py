@@ -3,7 +3,7 @@
 import io
 import logging
 import sys
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
 
 import typer
 
@@ -45,6 +45,80 @@ def _requerir(valor: str | None, variable: str) -> str:
         typer.secho(f"Falta la variable de entorno {variable} (ver .env.example).", fg="red")
         raise typer.Exit(1)
     return valor
+
+
+@app.command()
+def run(
+    forzar: bool = typer.Option(False, "--forzar", help="Regenerar el diario de hoy si ya existe."),
+) -> None:
+    """Corrida diaria completa: ingesta, contenido, puntaje y redacción."""
+    settings = Settings()
+    url = _requerir(settings.database_url, "DATABASE_URL")
+    llm = _crear_llm(settings)
+    fuentes_activas = _cargar(settings, solo_activas=True)
+    perfil = settings.ruta_perfil.read_text(encoding="utf-8")
+    hoy = pipeline.hoy_argentina()
+
+    with Repositorio.conectar(url) as repo, crear_cliente() as cliente:
+        corrida = repo.iniciar_corrida()
+        resumen = pipeline.ResumenCorrida()
+        try:
+            resumen = pipeline.correr_todo(
+                repo,
+                cliente,
+                llm,
+                fuentes_activas,
+                settings=settings,
+                perfil=perfil,
+                fecha=hoy,
+                forzar=forzar,
+            )
+        except Exception as e:
+            # Algo inesperado (ej. se cayó la base): se registra y se propaga.
+            resumen.errores.append({"etapa": "corrida", "error": repr(e)})
+            resumen.fallo = True
+            raise
+        finally:
+            consumo = resumen.consumo
+            repo.cerrar_corrida(
+                corrida,
+                items_nuevos=resumen.ingesta.items_nuevos if resumen.ingesta else 0,
+                items_puntuados=resumen.puntaje.puntuados if resumen.puntaje else 0,
+                tokens_entrada=consumo.entrada_total,
+                tokens_salida=consumo.salida,
+                errores=resumen.errores,
+            )
+
+    _imprimir_resumen(resumen, settings, hoy)
+    if resumen.fallo:
+        raise typer.Exit(1)
+
+
+def _imprimir_resumen(resumen: pipeline.ResumenCorrida, settings: Settings, hoy: date) -> None:
+    por_suscripcion = settings.llm_backend == "claude-code"
+    if resumen.ingesta:
+        i = resumen.ingesta
+        typer.echo(f"Ingesta:   {i.items_traidos} items -> {i.items_nuevos} noticias nuevas")
+    if resumen.contenido:
+        c = resumen.contenido
+        typer.echo(f"Contenido: {c.completados} de {c.pendientes} artículos sin texto completados")
+    if resumen.puntaje:
+        p = resumen.puntaje
+        typer.echo(f"Puntaje:   {p.puntuados} puntuados, {p.aprobados} con 7+")
+        consumo = p.consumo.resumen(settings.modelo_puntaje, por_suscripcion=por_suscripcion)
+        typer.echo(f"           {consumo}")
+    if resumen.redaccion:
+        r = resumen.redaccion
+        if r.salteado:
+            typer.echo(f"Diario:    {hoy}: no se generó ({r.salteado})")
+        else:
+            typer.echo(f"Diario:    {hoy}: {r.notas} notas y {r.radar} en el radar")
+            consumo = r.consumo.resumen(settings.modelo_redaccion, por_suscripcion=por_suscripcion)
+            typer.echo(f"           {consumo}")
+    for error in resumen.errores:
+        origen = error.get("fuente") or error.get("etapa")
+        color = typer.colors.RED if "etapa" in error else typer.colors.YELLOW
+        typer.secho(f"  error en {origen}: {error['error']}", fg=color)
 
 
 def _crear_llm(settings: Settings) -> ClienteLLM:

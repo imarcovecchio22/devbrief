@@ -4,7 +4,7 @@ import logging
 from collections.abc import Sequence
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, field
-from datetime import date, datetime
+from datetime import UTC, date, datetime, timedelta
 from zoneinfo import ZoneInfo
 
 import httpx
@@ -17,6 +17,7 @@ from diario.llm.cliente import (
     ClienteLLM,
     ConsumoTokens,
     Effort,
+    ErrorLLMFatal,
     ErrorLLMTransitorio,
     RespuestaLLM,
 )
@@ -37,6 +38,7 @@ from diario.llm.redaccion import armar_system as armar_system_redaccion
 from diario.llm.respuesta import ErrorRespuestaLLM
 from diario.modelos import ItemCrudo
 from diario.repositorio import Repositorio
+from diario.settings import Settings
 
 logger = logging.getLogger(__name__)
 
@@ -282,7 +284,7 @@ def redactar(
     """Escribe y guarda el diario de `fecha`. Si ya existe, no hace nada (salvo `forzar`)."""
     resumen = ResumenRedaccion(fecha=fecha)
     if repo.diario_existe(fecha) and not forzar:
-        resumen.salteado = "ya existe el diario de esa fecha (usá --forzar para regenerarlo)"
+        resumen.salteado = "ya existe el diario de esa fecha; usá --forzar para regenerarlo"
         return resumen
 
     candidatos = repo.candidatos_diario(dias=dias, fecha=fecha)
@@ -316,3 +318,98 @@ def redactar(
         resumen.consumo.resumen(modelo),
     )
     return resumen
+
+
+# ---------- corrida completa ----------
+
+
+@dataclass(slots=True)
+class ResumenCorrida:
+    ingesta: ResumenIngesta | None = None
+    contenido: ResumenContenido | None = None
+    puntaje: ResumenPuntaje | None = None
+    redaccion: ResumenRedaccion | None = None
+    errores: list[dict[str, str]] = field(default_factory=list)
+    fallo: bool = False  # alguna etapa no pudo completarse
+
+    @property
+    def consumo(self) -> ConsumoTokens:
+        total = ConsumoTokens()
+        if self.puntaje:
+            total += self.puntaje.consumo
+        if self.redaccion:
+            total += self.redaccion.consumo
+        return total
+
+
+def correr_todo(
+    repo: Repositorio,
+    cliente: httpx.Client,
+    llm: ClienteLLM,
+    fuentes: Sequence[Fuente],
+    *,
+    settings: Settings,
+    perfil: str,
+    fecha: date,
+    forzar: bool = False,
+) -> ResumenCorrida:
+    """Ingesta -> contenido -> puntaje -> redacción.
+
+    Las fuentes que fallan se registran y no cortan nada. Un error del LLM en
+    el puntaje o la redacción corta la corrida y la marca como fallida; lo ya
+    guardado queda guardado, así que la próxima corrida retoma desde ahí.
+    """
+    r = ResumenCorrida()
+
+    desde = datetime.now(UTC) - timedelta(days=settings.ventana_dias)
+    r.ingesta = ingestar(
+        repo,
+        fuentes,
+        cliente,
+        desde=desde,
+        dias_dedupe=settings.dias_dedupe,
+        max_contenido=settings.max_caracteres_contenido,
+    )
+    r.errores.extend(r.ingesta.errores)
+
+    r.contenido = completar_contenido(
+        repo, cliente, max_contenido=settings.max_caracteres_contenido
+    )
+
+    areas = {f.nombre: f.area for f in fuentes}
+    items = repo.items_para_puntuar(
+        max_intentos=settings.max_intentos_puntaje,
+        limite=settings.max_items_puntaje,
+        areas=areas,
+    )
+    try:
+        r.puntaje = puntuar(
+            repo,
+            llm,
+            items,
+            perfil=perfil,
+            modelo=settings.modelo_puntaje,
+            tamano_lote=settings.tamano_lote_puntaje,
+            hilos=settings.hilos_llm,
+        )
+    except ErrorLLMFatal as e:
+        logger.error("Puntaje cortado: %s", e)
+        r.errores.append({"etapa": "puntaje", "error": str(e)})
+        r.fallo = True
+        return r
+
+    try:
+        r.redaccion = redactar(
+            repo,
+            llm,
+            perfil=perfil,
+            modelo=settings.modelo_redaccion,
+            fecha=fecha,
+            dias=settings.ventana_dias,
+            forzar=forzar,
+        )
+    except (ErrorLLMFatal, ErrorLLMTransitorio, ErrorRespuestaLLM) as e:
+        logger.error("Redacción fallida: %s", e)
+        r.errores.append({"etapa": "redaccion", "error": str(e)})
+        r.fallo = True
+    return r
