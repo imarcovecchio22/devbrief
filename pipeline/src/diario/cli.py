@@ -7,9 +7,11 @@ from datetime import UTC, datetime, timedelta
 
 import typer
 
+from diario import pipeline
 from diario.config import ErrorConfig, Fuente, cargar_fuentes
 from diario.diagnostico import Estado, probar_fuentes
 from diario.fuentes import crear_cliente
+from diario.repositorio import Repositorio
 from diario.settings import Settings
 
 app = typer.Typer(help="Diario técnico personal.", no_args_is_help=True)
@@ -28,6 +30,47 @@ def _cargar(settings: Settings, *, solo_activas: bool) -> list[Fuente]:
     except ErrorConfig as e:
         typer.secho(str(e), fg=typer.colors.RED, err=True)
         raise typer.Exit(1) from e
+
+
+def _requerir(valor: str | None, variable: str) -> str:
+    if not valor:
+        typer.secho(f"Falta la variable de entorno {variable} (ver .env.example).", fg="red")
+        raise typer.Exit(1)
+    return valor
+
+
+@app.command()
+def ingestar(
+    dias: int | None = typer.Option(None, help="Ventana en días (default: VENTANA_DIAS)."),
+) -> None:
+    """Trae las fuentes activas, deduplica y guarda los items nuevos."""
+    settings = Settings()
+    url = _requerir(settings.database_url, "DATABASE_URL")
+    fuentes_activas = _cargar(settings, solo_activas=True)
+    desde = datetime.now(UTC) - timedelta(days=dias or settings.ventana_dias)
+
+    with Repositorio.conectar(url) as repo, crear_cliente() as cliente:
+        corrida = repo.iniciar_corrida()
+        try:
+            resumen = pipeline.ingestar(
+                repo,
+                fuentes_activas,
+                cliente,
+                desde=desde,
+                dias_dedupe=settings.dias_dedupe,
+                max_contenido=settings.max_caracteres_contenido,
+            )
+        except Exception as e:
+            repo.cerrar_corrida(corrida, errores=[{"etapa": "ingesta", "error": repr(e)}])
+            raise
+        repo.cerrar_corrida(corrida, items_nuevos=resumen.items_nuevos, errores=resumen.errores)
+
+    typer.echo(
+        f"{resumen.items_traidos} items traídos -> {resumen.grupos} noticias -> "
+        f"{resumen.items_nuevos} nuevas, {resumen.apariciones_nuevas} apariciones nuevas."
+    )
+    for error in resumen.errores:
+        typer.secho(f"  falló {error['fuente']}: {error['error']}", fg=typer.colors.YELLOW)
 
 
 @app.command()

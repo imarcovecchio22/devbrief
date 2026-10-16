@@ -18,10 +18,16 @@ class Settings(BaseSettings):
     # Opcionales acá: cada comando valida que estén los que necesita.
     anthropic_api_key: str | None = None
     database_url: str | None = None
+    # Solo para los tests de integración: un branch de Neon aparte.
+    test_database_url: str | None = None
 
     config_dir: Path = RAIZ_REPO / "config"
     # Items publicados hace más días que esto se descartan en la ingesta.
     ventana_dias: int = 3
+    # Días hacia atrás contra los que se deduplica por título.
+    dias_dedupe: int = 7
+    # Texto que se guarda por item (y se manda al LLM): ~500 tokens.
+    max_caracteres_contenido: int = 2000
 
     @property
     def ruta_fuentes(self) -> Path:

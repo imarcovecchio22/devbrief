@@ -12,7 +12,9 @@
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy",
     "db:status": "prisma migrate status",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "db:deploy:test": "prisma migrate deploy",
+    "db:status:test": "prisma migrate status"
   },
   "dependencies": {
     "@prisma/adapter-neon": "7.10.1",
