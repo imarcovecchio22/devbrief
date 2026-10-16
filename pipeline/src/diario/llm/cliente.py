@@ -52,12 +52,18 @@ class ConsumoTokens:
         )
         return (tokens_entrada_equivalentes * precio_entrada + self.salida * precio_salida) / 1e6
 
-    def resumen(self, modelo: str) -> str:
+    def resumen(self, modelo: str, *, por_suscripcion: bool = False) -> str:
         costo = self.costo_usd(modelo)
+        if costo is None:
+            detalle_costo = ""
+        elif por_suscripcion:
+            # No se paga: es lo que costaría por API, como referencia de consumo.
+            detalle_costo = f", equivalente API ~US$ {costo:.4f} (cubierto por la suscripción)"
+        else:
+            detalle_costo = f", ~US$ {costo:.4f}"
         return (
             f"{self.llamadas} llamadas a {modelo}: {self.entrada_total:,} tokens de entrada "
-            f"({self.cache_lectura:,} desde caché), {self.salida:,} de salida"
-            + (f", ~US$ {costo:.4f}" if costo is not None else "")
+            f"({self.cache_lectura:,} desde caché), {self.salida:,} de salida{detalle_costo}"
         )
 
 

@@ -11,7 +11,8 @@ from diario import pipeline
 from diario.config import ErrorConfig, Fuente, cargar_fuentes
 from diario.diagnostico import Estado, probar_fuentes
 from diario.fuentes import crear_cliente
-from diario.llm.cliente import ClienteAnthropic, ErrorLLMFatal
+from diario.llm.claude_code import ClienteClaudeCode
+from diario.llm.cliente import ClienteAnthropic, ClienteLLM, ErrorLLMFatal
 from diario.repositorio import Repositorio
 from diario.settings import Settings
 
@@ -38,6 +39,12 @@ def _requerir(valor: str | None, variable: str) -> str:
         typer.secho(f"Falta la variable de entorno {variable} (ver .env.example).", fg="red")
         raise typer.Exit(1)
     return valor
+
+
+def _crear_llm(settings: Settings) -> ClienteLLM:
+    if settings.llm_backend == "api":
+        return ClienteAnthropic(_requerir(settings.anthropic_api_key, "ANTHROPIC_API_KEY"))
+    return ClienteClaudeCode(settings.claude_ejecutable)
 
 
 @app.command()
@@ -83,7 +90,7 @@ def puntuar(
     """Puntúa con el LLM los items nuevos según config/perfil.md."""
     settings = Settings()
     url = _requerir(settings.database_url, "DATABASE_URL")
-    api_key = _requerir(settings.anthropic_api_key, "ANTHROPIC_API_KEY")
+    llm = _crear_llm(settings)
     perfil = settings.ruta_perfil.read_text(encoding="utf-8")
     areas = {f.nombre: f.area for f in _cargar(settings, solo_activas=False)}
 
@@ -93,20 +100,24 @@ def puntuar(
             limite=limite or settings.max_items_puntaje,
             areas=areas,
         )
-        typer.echo(f"{len(items)} items para puntuar con {settings.modelo_puntaje}.")
+        typer.echo(
+            f"{len(items)} items para puntuar con {settings.modelo_puntaje} "
+            f"(backend: {settings.llm_backend})."
+        )
         corrida = repo.iniciar_corrida()
         resumen = pipeline.ResumenPuntaje()
         try:
             resumen = pipeline.puntuar(
                 repo,
-                ClienteAnthropic(api_key),
+                llm,
                 items,
                 perfil=perfil,
                 modelo=settings.modelo_puntaje,
+                tamano_lote=settings.tamano_lote_puntaje,
                 hilos=settings.hilos_llm,
             )
         except ErrorLLMFatal as e:
-            typer.secho(f"Error de la API de Anthropic: {e}", fg=typer.colors.RED, err=True)
+            typer.secho(f"Error del LLM: {e}", fg=typer.colors.RED, err=True)
             raise typer.Exit(1) from e
         finally:
             repo.cerrar_corrida(
@@ -120,7 +131,8 @@ def puntuar(
         f"{resumen.puntuados} puntuados ({resumen.aprobados} con {pipeline.UMBRAL_DIARIO}+), "
         f"{resumen.invalidos} inválidos, {resumen.fallidos} con error de API."
     )
-    typer.echo(resumen.consumo.resumen(settings.modelo_puntaje))
+    por_suscripcion = settings.llm_backend == "claude-code"
+    typer.echo(resumen.consumo.resumen(settings.modelo_puntaje, por_suscripcion=por_suscripcion))
 
 
 @app.command("completar-contenido")

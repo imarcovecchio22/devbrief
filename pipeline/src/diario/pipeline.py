@@ -20,11 +20,11 @@ from diario.llm.cliente import (
     RespuestaLLM,
 )
 from diario.llm.puntaje import (
-    SCHEMA_PUNTAJE,
+    SCHEMA_LOTE,
     ItemAPuntuar,
-    armar_mensaje,
+    armar_mensaje_lote,
     armar_system,
-    parsear_puntaje,
+    parsear_lote,
 )
 from diario.llm.respuesta import ErrorRespuestaLLM
 from diario.modelos import ItemCrudo
@@ -76,12 +76,13 @@ class ResumenPuntaje:
     puntuados: int = 0
     aprobados: int = 0  # puntaje >= UMBRAL_DIARIO
     invalidos: int = 0  # respuesta que no se pudo usar: gasta un intento del item
-    fallidos: int = 0  # error transitorio de la API: se reintenta en otra corrida
+    fallidos: int = 0  # error transitorio del LLM: se reintenta en otra corrida
     consumo: ConsumoTokens = field(default_factory=ConsumoTokens)
 
 
 UMBRAL_DIARIO = 7
-_MAX_TOKENS_PUNTAJE = 1024  # el thinking adaptativo también cuenta acá
+# Con lotes de ~20 la respuesta ronda los 4K tokens; el thinking también cuenta.
+_MAX_TOKENS_PUNTAJE = 16000
 _EFFORT_PUNTAJE: Effort = "low"  # clasificación: no necesita pensar mucho
 
 
@@ -92,60 +93,73 @@ def puntuar(
     *,
     perfil: str,
     modelo: str,
+    tamano_lote: int,
     hilos: int,
 ) -> ResumenPuntaje:
-    """Puntúa cada item con el LLM y guarda el resultado apenas llega.
+    """Puntúa los items de a lotes y guarda cada lote apenas llega.
 
-    Guardar de a uno hace que un corte a mitad de camino no tire tokens ya
-    gastados: la próxima corrida sigue con los que faltan.
+    Guardar a medida que llegan hace que un corte a mitad de camino no tire
+    tokens ya gastados: la próxima corrida sigue con los que faltan.
     """
     resumen = ResumenPuntaje()
     if not items:
         return resumen
     system = armar_system(perfil)
+    lotes = [items[i : i + tamano_lote] for i in range(0, len(items), tamano_lote)]
 
-    def llamar(item: ItemAPuntuar) -> RespuestaLLM | ErrorLLMTransitorio:
+    def llamar(lote: Sequence[ItemAPuntuar]) -> RespuestaLLM | ErrorLLMTransitorio:
         try:
             return llm.pedir_json(
                 modelo=modelo,
                 system=system,
-                mensaje=armar_mensaje(item),
-                schema=SCHEMA_PUNTAJE,
+                mensaje=armar_mensaje_lote(lote),
+                schema=SCHEMA_LOTE,
                 max_tokens=_MAX_TOKENS_PUNTAJE,
                 effort=_EFFORT_PUNTAJE,
             )
         except ErrorLLMTransitorio as e:
             return e  # ErrorLLMFatal sí se propaga y corta todo
 
-    def procesar(item: ItemAPuntuar, resultado: RespuestaLLM | ErrorLLMTransitorio) -> None:
+    def fallar(item: ItemAPuntuar, motivo: str) -> None:
+        logger.warning("Item %d sin puntaje: %s", item.id, motivo)
+        repo.registrar_intento_fallido(item.id)
+        resumen.invalidos += 1
+
+    def procesar(
+        lote: Sequence[ItemAPuntuar], resultado: RespuestaLLM | ErrorLLMTransitorio
+    ) -> None:
         if isinstance(resultado, ErrorLLMTransitorio):
-            logger.warning("Item %d sin puntuar por error de la API: %s", item.id, resultado)
-            resumen.fallidos += 1
+            logger.warning("Lote de %d items sin puntuar por error: %s", len(lote), resultado)
+            resumen.fallidos += len(lote)
             return
 
         resumen.consumo += resultado.consumo
         try:
             if resultado.stop_reason in ("refusal", "max_tokens"):
                 raise ErrorRespuestaLLM(f"stop_reason={resultado.stop_reason}")
-            p = parsear_puntaje(resultado.texto, area_respaldo=item.area)
+            puntajes = parsear_lote(resultado.texto, {i.id: i.area for i in lote})
         except ErrorRespuestaLLM as e:
-            logger.warning("Respuesta inválida para el item %d: %s", item.id, e)
-            repo.registrar_intento_fallido(item.id)
-            resumen.invalidos += 1
+            for item in lote:
+                fallar(item, f"respuesta inválida del lote ({e})")
             return
 
-        repo.guardar_puntaje(item.id, p.puntaje, p.seccion, p.motivo)
-        resumen.puntuados += 1
-        resumen.aprobados += p.puntaje >= UMBRAL_DIARIO
-        logger.debug("%2d %-10s %s", p.puntaje, p.seccion, item.titulo)
+        for item in lote:
+            p = puntajes.get(item.id)
+            if p is None:
+                fallar(item, "el modelo no lo evaluó")
+                continue
+            repo.guardar_puntaje(item.id, p.puntaje, p.seccion, p.motivo)
+            resumen.puntuados += 1
+            resumen.aprobados += p.puntaje >= UMBRAL_DIARIO
+            logger.debug("%2d %-10s %s", p.puntaje, p.seccion, item.titulo)
 
-    # La primera llamada va sola: escribe el system prompt en caché y las demás
-    # lo leen. Si salieran todas juntas, todas pagarían la escritura completa.
-    primero, *resto = items
+    # El primer lote va solo: escribe el system prompt en caché y los demás lo
+    # leen. Si salieran todos juntos, todos pagarían la escritura completa.
+    primero, *resto = lotes
     procesar(primero, llamar(primero))
 
     with ThreadPoolExecutor(max_workers=hilos) as pool:
-        futuros = {pool.submit(llamar, item): item for item in resto}
+        futuros = {pool.submit(llamar, lote): lote for lote in resto}
         try:
             for futuro in as_completed(futuros):
                 procesar(futuros[futuro], futuro.result())
@@ -155,7 +169,7 @@ def puntuar(
             raise
 
     logger.info(
-        "Puntaje: %d puntuados (%d con %d o más), %d inválidos, %d con error de API. %s",
+        "Puntaje: %d puntuados (%d con %d o más), %d inválidos, %d con error. %s",
         resumen.puntuados,
         resumen.aprobados,
         UMBRAL_DIARIO,

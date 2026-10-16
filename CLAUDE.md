@@ -21,6 +21,11 @@ prolijos.
   4. Redacción: los 10-15 mejores (puntaje >= 7) van a un modelo mejor
      (Claude Sonnet), que escribe el diario según el formato del perfil.
   5. Guarda el diario en la base.
+  - Las llamadas al LLM van por Claude Code en modo no interactivo
+    (`claude -p`), que usa el cupo de la suscripción de Claude: no se
+    gasta en créditos de API. La API de Anthropic queda como backend
+    alternativo (`LLM_BACKEND=api`). El puntaje se hace en lotes de ~20
+    items por llamada para no multiplicar sesiones de Claude Code.
 - `web/` — Next.js (App Router) en Vercel. Muestra el diario del día y
   el archivo de diarios anteriores. Lee directo de la base.
 - Base: PostgreSQL en Neon. Python accede con SQLAlchemy o psycopg,
@@ -42,8 +47,11 @@ prolijos.
 - Si una fuente falla, se loguea y se sigue con las demás.
 - Las URLs marcadas con "verificar" en fuentes.yaml pueden estar mal:
   incluir un comando que pruebe cada fuente e informe cuáles fallan.
-- Secrets por variables de entorno (ANTHROPIC_API_KEY, DATABASE_URL).
-  Nunca en el repo.
+- Secrets por variables de entorno (DATABASE_URL; en CI,
+  CLAUDE_CODE_OAUTH_TOKEN de `claude setup-token`; ANTHROPIC_API_KEY solo
+  con el backend de API). Nunca en el repo.
+- No gastar dinero extra: nada que requiera créditos de API ni servicios
+  pagos más allá de la suscripción de Claude y los planes gratuitos.
 - Verificar en la documentación de Anthropic los nombres actuales de los
   modelos antes de usarlos.
 - Tests para normalización, dedupe y parseo de la respuesta del LLM.

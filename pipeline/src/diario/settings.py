@@ -1,6 +1,7 @@
 """Configuración por variables de entorno (y .env en la raíz del repo, si existe)."""
 
 from pathlib import Path
+from typing import Literal
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -29,6 +30,12 @@ class Settings(BaseSettings):
     # Texto que se guarda por item (y se manda al LLM): ~500 tokens.
     max_caracteres_contenido: int = 2000
 
+    # Cómo se llama al LLM:
+    # - "claude-code": `claude -p`, usa el cupo de la suscripción de Claude (default)
+    # - "api": la API de Anthropic con ANTHROPIC_API_KEY (se paga por token)
+    llm_backend: Literal["claude-code", "api"] = "claude-code"
+    claude_ejecutable: str = "claude"
+
     # Modelos (IDs verificados en la documentación de Anthropic el 2026-10-16).
     modelo_puntaje: str = "claude-haiku-5-5"
     modelo_redaccion: str = "claude-sonnet-5-5"
@@ -36,8 +43,10 @@ class Settings(BaseSettings):
     max_intentos_puntaje: int = 2
     # Tope de items a puntuar por corrida: protege el costo si algo se desborda.
     max_items_puntaje: int = 300
+    # Noticias por llamada al LLM de puntaje.
+    tamano_lote_puntaje: int = 20
     # Llamadas en paralelo al LLM.
-    hilos_llm: int = 4
+    hilos_llm: int = 3
 
     @property
     def ruta_fuentes(self) -> Path:
