@@ -1,0 +1,9 @@
+# Finales de línea LF en el repo y en el working copy, en cualquier SO:
+# CI corre en Linux y así los diffs no se llenan de cambios de CRLF.
+* text=auto eol=lf
+
+# Binarios: no tocar
+*.png binary
+*.jpg binary
+*.ico binary
+*.woff2 binary
