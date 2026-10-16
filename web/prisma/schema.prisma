@@ -1,0 +1,87 @@
+// Fuente de verdad del esquema de la base.
+//
+// El pipeline de Python no tiene ORM: escribe con SQL explícito (psycopg)
+// sobre estas mismas tablas. Por eso los nombres de tablas y columnas están
+// en snake_case (@map / @@map) y los campos de Prisma en camelCase.
+// Cualquier cambio acá necesita su migración: `npm run db:migrate`.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+/// Una noticia, deduplicada por URL canónica.
+model Item {
+  id                Int          @id @default(autoincrement())
+  /// Identidad del item: URL normalizada (ver pipeline/src/diario/normalizacion.py).
+  urlCanonica       String       @unique @map("url_canonica")
+  titulo            String
+  /// Texto plano ya recortado: es lo que se le manda al LLM.
+  contenidoResumido String       @default("") @map("contenido_resumido")
+  fechaPublicacion  DateTime?    @map("fecha_publicacion") @db.Timestamptz(6)
+  fechaIngesta      DateTime     @default(now()) @map("fecha_ingesta") @db.Timestamptz(6)
+  /// 0 a 10; null = todavía sin puntuar.
+  puntaje           Int?         @db.SmallInt
+  /// Clave de sección (pipeline/src/diario/secciones.py).
+  seccion           String?
+  motivo            String?
+  puntuadoEn        DateTime?    @map("puntuado_en") @db.Timestamptz(6)
+  /// Respuestas del LLM que no se pudieron parsear; se deja de reintentar al llegar al tope.
+  intentosPuntaje   Int          @default(0) @map("intentos_puntaje") @db.SmallInt
+  /// Diario en el que salió publicado; evita repetir notas entre días.
+  diarioId          Int?         @map("diario_id")
+  diario            Diario?      @relation(fields: [diarioId], references: [id], onDelete: SetNull)
+  fuentes           ItemFuente[]
+
+  /// Candidatos para el diario: puntuados y todavía no publicados.
+  @@index([diarioId, puntaje])
+  /// Items pendientes de puntuar.
+  @@index([puntaje, intentosPuntaje])
+  @@map("items")
+}
+
+/// Cada fuente en la que apareció un item: que esté en varias es señal de relevancia.
+model ItemFuente {
+  itemId      Int      @map("item_id")
+  /// `nombre` de la fuente en config/fuentes.yaml.
+  fuente      String
+  urlOriginal String   @map("url_original")
+  /// Popularidad en la fuente (puntos de HN, etc.), si la hay.
+  senal       Int?
+  vistoEn     DateTime @default(now()) @map("visto_en") @db.Timestamptz(6)
+  item        Item     @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  @@id([itemId, fuente])
+  @@map("item_fuentes")
+}
+
+/// Un diario por día (fecha en hora de Argentina).
+model Diario {
+  id        Int      @id @default(autoincrement())
+  fecha     DateTime @unique @db.Date
+  /// {secciones: [{clave, nombre, notas: [{item_id, titular, resumen, por_que_te_sirve, url, fuentes}]}]}
+  contenido Json
+  creadoEn  DateTime @default(now()) @map("creado_en") @db.Timestamptz(6)
+  items     Item[]
+
+  @@map("diarios")
+}
+
+/// Registro de cada ejecución del pipeline, incluido el consumo de tokens.
+model Corrida {
+  id             Int       @id @default(autoincrement())
+  inicio         DateTime  @default(now()) @db.Timestamptz(6)
+  fin            DateTime? @db.Timestamptz(6)
+  itemsNuevos    Int       @default(0) @map("items_nuevos")
+  itemsPuntuados Int       @default(0) @map("items_puntuados")
+  tokensEntrada  Int       @default(0) @map("tokens_entrada")
+  tokensSalida   Int       @default(0) @map("tokens_salida")
+  /// [{fuente, error}] de las fuentes que fallaron y otros problemas no fatales.
+  errores        Json      @default("[]")
+
+  @@map("corridas")
+}
