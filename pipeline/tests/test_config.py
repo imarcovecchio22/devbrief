@@ -9,20 +9,16 @@ from diario.config import (
     cargar_fuentes,
     parsear_fuentes,
 )
+from diario.fuentes import tiene_fetcher
 from diario.settings import RAIZ_REPO
 
 
-def test_archivo_real_tiene_las_seis_activas_del_mvp() -> None:
+def test_toda_fuente_activa_tiene_fetcher() -> None:
     activas = cargar_fuentes(RAIZ_REPO / "config" / "fuentes.yaml")
 
-    assert {f.nombre for f in activas} == {
-        "Simon Willison",
-        "Claude Code releases",
-        "Anthropic News",
-        ".NET Blog",
-        "Real Python",
-        "Hacker News portada",
-    }
+    assert activas
+    sin_fetcher = [f.nombre for f in activas if not tiene_fetcher(f)]
+    assert sin_fetcher == [], "Fuentes activas que el pipeline no sabe leer"
 
 
 def test_archivo_real_parsea_todas_las_fuentes() -> None:

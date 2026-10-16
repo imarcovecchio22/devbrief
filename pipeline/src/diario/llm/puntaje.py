@@ -137,8 +137,7 @@ evaluación por noticia con su mismo id:
   y por qué le sirve o no a Nacho).
 - "seccion": la clave de la sección donde iría, de esta lista:
 {secciones}
-- "puntaje": entero de 0 a 10 según el criterio de puntaje del perfil. Sé
-  exigente: solo lo usable y concreto llega a 7.
+- "puntaje": entero de 0 a 10 según el criterio de puntaje del perfil.
 
 Que aparezca en varias fuentes o tenga muchos puntos en HN es señal de
 relevancia, pero no reemplaza tu criterio sobre su utilidad para Nacho.
